@@ -20,19 +20,18 @@ const bool SimulatorApp::WINDOW_RESIZABLE = true;
 const int SimulatorApp::SIM_FPS_CAP = 600000000;
 const GLclampf SimulatorApp::RENDER_BG_COLOR[3] = {0.95, 0.95, 0.95};
 
-SimulatorApp::SimulatorApp(std::string sceneName, Json::Value sceneConfig, int nThreads)
+SimulatorApp::SimulatorApp(std::string sceneName, Json::Value sceneConfig)
     : App(sceneName, SimulatorApp::WINDOW_SIZE, SimulatorApp::WINDOW_RESIZABLE),
       sceneConfig_(sceneConfig),
-      nThreads_(nThreads),
       cameraMode_(CameraProjection::PERSP),
       cameraViewpoint_(CameraViewpoint::TOP),
       trackball_(),
       nNets_(0),
       nets_(),
       totNodes_(0),
-      force_(),
+      force_(nullptr),
       applyForce_(true),
-      solver_(),
+      solver_(nullptr),
       playSim_(false),
       simThread_(),
       byebye_(false)
@@ -42,6 +41,29 @@ bool SimulatorApp::initApp()
 {    
     try
     {
+        // initialize constraint solver
+
+        Json::Value& solverObj = sceneConfig_["constraint_solver"];
+        if(solverObj.isNull() || !solverObj.isObject())
+            throw "No configuration for constraint_solver found";
+
+        float absTol;
+        TRY_PARSE("Parsing absolute_tolerance of constraint solver",
+            absTol = solverObj["absolute_tolerance"].asFloat();
+        );
+
+        float relTol;
+        TRY_PARSE("Parsing relative_tolerance of constraint solver",
+            relTol = solverObj["relative_tolerance"].asFloat();
+        );
+
+        int maxIters;
+        TRY_PARSE("Parsing max_iters of constraint solver",
+            maxIters = solverObj["max_iters"].asInt();
+        );
+
+        solver_ = new ConstraintSolver(nets_, nNets_, absTol, relTol, maxIters);
+        
         // initialize nets
         
         Json::Value& netsArray = sceneConfig_["nets"];
@@ -93,35 +115,11 @@ bool SimulatorApp::initApp()
                 }
             );
 
-            nets_.push_back(std::make_shared<Net>(size, edgeLength, center, xTangVec, yTangVec, color));
+            nets_.push_back(new Net(size, edgeLength, center, xTangVec, yTangVec, color));
             totNodes_ += nets_[n]->getNNodes();
+
+            solver_->addConstraint(std::make_unique<EdgeLengthConstraint>(nets_, n, edgeLength));
         }
-
-        // initialize constraints and solver
-
-        Json::Value& solverObj = sceneConfig_["constraint_solver"];
-        if(solverObj.isNull() || !solverObj.isObject())
-            throw "No configuration for constraint_solver found";
-
-        float absTol;
-        TRY_PARSE("Parsing absolute_tolerance of constraint solver",
-            absTol = solverObj["absolute_tolerance"].asFloat();
-        );
-
-        float relTol;
-        TRY_PARSE("Parsing relative_tolerance of constraint solver",
-            relTol = solverObj["relative_tolerance"].asFloat();
-        );
-
-        int maxIters;
-        TRY_PARSE("Parsing max_iters of constraint solver",
-            maxIters = solverObj["max_iters"].asInt();
-        );
-
-        solver_ = std::make_unique<ConstraintSolver>(nets_, nNets_, absTol, relTol, maxIters, nThreads_);
-
-        for(int i = 0; i < nets_[0]->getNEdges(); i++)
-            solver_->addConstraint(std::make_unique<EdgeLengthConstraint>(nets_, 0, i, 0.25));
 
         // initialize force        
 
@@ -143,7 +141,7 @@ bool SimulatorApp::initApp()
                                                  forceObj["translation_vector"][2].asFloat());
             );
 
-            force_ = std::make_unique<ConstantForce>(translationVec);
+            force_ = new ConstantForce(translationVec);
         }
         // TODO: else if...
         else
@@ -168,7 +166,17 @@ void SimulatorApp::quitApp()
     simThread_.join();
 }
 
-SimulatorApp::~SimulatorApp() {}
+SimulatorApp::~SimulatorApp()
+{
+    for(int n = 0; n < nets_.size(); n++)
+        delete nets_[n];
+    
+    if(solver_ != nullptr)
+        delete solver_;
+
+    if(force_ != nullptr)
+        delete force_;
+}
 
 bool SimulatorApp::mainLoop(double delta)
 {
@@ -226,7 +234,7 @@ void SimulatorApp::drawGridRenderMode()
     
     for(int netIdx = 0; netIdx < nNets_; netIdx++)
     {
-        Net& net = *nets_[netIdx].get();
+        Net& net = *nets_[netIdx];
         
         // Draw edges
 

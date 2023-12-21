@@ -3,13 +3,8 @@
 #include <string>
 
 #include <json/json.h>
-#include <omp.h>
 
 #include "simulator_app.hpp"
-
-
-#include "net.hpp"
-#include <vector>
 
 
 int main(int argc, char* argv[])
@@ -73,15 +68,8 @@ int main(int argc, char* argv[])
             }
         }
     }
-
-    int nOMPThreads;
-    #pragma omp parallel
-    {
-        #pragma omp single
-        nOMPThreads = omp_get_num_threads();
-    }
-
-    SimulatorApp simApp(sceneName, sceneRoot, nOMPThreads);
+    
+    SimulatorApp simApp(sceneName, sceneRoot);
     simApp.run();
 
     return EXIT_SUCCESS;

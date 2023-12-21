@@ -139,7 +139,7 @@ void SimulatorApp::drawGUI()
 
     {
         ImGui::Begin("Force");
-        static ConstantForce* forceConstant = dynamic_cast<ConstantForce*>(force_.get());
+        static ConstantForce* forceConstant = dynamic_cast<ConstantForce*>(force_);
         if(forceConstant != NULL)
         {
             ImGui::SeparatorText("Constant force");

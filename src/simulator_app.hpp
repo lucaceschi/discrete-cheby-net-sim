@@ -27,7 +27,7 @@ private:
     enum class CameraViewpoint { TOP, FRONT, RIGHT };
 
 public:
-    SimulatorApp(std::string sceneName, Json::Value sceneConfig, int nThreads);
+    SimulatorApp(std::string sceneName, Json::Value sceneConfig);
     virtual ~SimulatorApp();
 
 private:
@@ -52,20 +52,19 @@ private:
     // - - - -
 
     Json::Value sceneConfig_;
-    int nThreads_;
 
     CameraProjection cameraMode_;
     CameraViewpoint cameraViewpoint_;
     vcg::Trackball trackball_;
 
     int nNets_;
-    std::vector<std::shared_ptr<Net>> nets_;
+    std::vector<Net*> nets_;
     int totNodes_;
 
-    std::unique_ptr<Force> force_;
+    Force* force_;
     bool applyForce_;
     
-    std::unique_ptr<ConstraintSolver> solver_;
+    ConstraintSolver* solver_;
 
     bool playSim_;
     std::thread simThread_;

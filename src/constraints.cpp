@@ -3,35 +3,29 @@
 #include <iostream>
 
 
-EdgeLengthConstraint::EdgeLengthConstraint(std::vector<std::shared_ptr<Net>>&  nets,
-                                           int netIndex, int edgeIndex, float edgeLength)
-    : net_(nets[netIndex]),
-      netIdx_(netIndex),
-      edgeIdx_(edgeIndex),
+EdgeLengthConstraint::EdgeLengthConstraint(std::vector<Net*>& nets, int netIndex, float edgeLength)
+    : netIdx_(netIndex),
       edgeLenSquared_(std::pow(edgeLength, 2))
 {}
 
-float EdgeLengthConstraint::solve(std::vector<Eigen::Matrix3Xf>& newPos,
-                                  std::vector<Eigen::ArrayXf>& updateCounts) const
+float EdgeLengthConstraint::solve(std::vector<Net*>& nets) const
 {
-    std::shared_ptr<Net> net = net_.lock();
-    if(!net)
-        return 0;
+    Net* n = nets[netIdx_];
+    double maxDelta = 0.0;
     
-    int p0Indx = net->edge(edgeIdx_)[0];
-    int p1Indx = net->edge(edgeIdx_)[1];
+    for(int e = 0; e < n->getNEdges(); e++)
+    {
+        Eigen::Vector3f v = n->nodePos(n->edge(e)[0]) - n->nodePos(n->edge(e)[1]);
+        double dist = v.squaredNorm();
+        double delta = (edgeLenSquared_ - dist);
+        double s = delta / (4 * dist);
+        Eigen::Vector3f deltaV = s * v;
 
-    Eigen::Vector3f v = net->nodePos(p0Indx) - net->nodePos(p1Indx);
-    double dist = v.squaredNorm();
-    double delta = (edgeLenSquared_ - dist);
-    double s = delta / (4 * dist);
-    Eigen::Vector3f deltaV = s * v;
+        n->nodePos(n->edge(e)[0]) += deltaV;
+        n->nodePos(n->edge(e)[1]) -= deltaV;
 
-    newPos[netIdx_].col(p0Indx) += (net->nodePos(p0Indx) + deltaV);
-    newPos[netIdx_].col(p1Indx) += (net->nodePos(p1Indx) - deltaV);
+        maxDelta = std::max(maxDelta, std::abs(delta));
+    }
 
-    updateCounts[netIdx_][p0Indx]++;
-    updateCounts[netIdx_][p1Indx]++;
-
-    return delta;
+    return maxDelta;
 }

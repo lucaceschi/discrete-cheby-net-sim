@@ -16,9 +16,8 @@ public:
     enum class ReturnCode { CONVERGENCE, REACHED_MAX_ITERS };
     
     ConstraintSolver();
-    ConstraintSolver(std::vector<std::shared_ptr<Net>>& nets, int nNets,
-                     float absoluteTolerance, float relativeTolerance, int maxIterations,
-                     int nThreads);
+    ConstraintSolver(std::vector<Net*>& nets, int nNets,
+                     float absoluteTolerance, float relativeTolerance, int maxIterations);
 
     void addConstraint(std::unique_ptr<ConstraintTask> constraintTask);
 
@@ -29,18 +28,13 @@ public:
     const float getMaxDelta();
 
 private:
-    std::vector<std::shared_ptr<Net>>& nets_;
+    std::vector<Net*>& nets_;
     int nNets_;
-    int totNodes_;
-    std::vector<std::vector<Eigen::Matrix3Xf>> newPosLocal_;
-    std::vector<std::vector<Eigen::ArrayXf>> updateCountsLocal_;
 
     float absTol_, relTol_;
     int maxIters_;
 
     std::vector<std::unique_ptr<ConstraintTask>> tasks_;
-
-    int nThreads_;
 
     volatile int nIters_;
     volatile float totDisplacement_;
