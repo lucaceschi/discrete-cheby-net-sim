@@ -63,6 +63,8 @@ void App::run()
 
         glfwSwapBuffers(window_);
     }
+    
+    quitApp();
 }
 
 bool App::init()
@@ -128,6 +130,8 @@ bool App::mainLoop(double delta)
 {
     return true;
 }
+
+void App::quitApp() {}
 
 // Window getters - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 

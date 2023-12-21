@@ -47,6 +47,7 @@ namespace frmwrk
 
         virtual bool initApp();
         virtual bool mainLoop(double delta);
+        virtual void quitApp();
 
         static void windowSizeCallback(GLFWwindow* window, int width, int height);
     };
