@@ -14,3 +14,6 @@
 	path = external/vcglib
 	url = https://github.com/cnr-isti-vclab/vcglib.git
 	branch = devel
+[submodule "jsoncpp"]
+	path = external/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp
