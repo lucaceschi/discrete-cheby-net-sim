@@ -23,36 +23,44 @@ void ConstraintSolver::addConstraint(std::unique_ptr<ConstraintTask> constraintT
 }
 
 ConstraintSolver::ReturnCode ConstraintSolver::solve()
-{       
+{
     static bool stop;
     static int nIters;
-    static float maxDelta;
-    static float totDisplacement;
+    static float meanDelta;
+    static float firstMeanDelta;
+    static float totPrevNorm;
     static ConstraintSolver::ReturnCode returnCode;
 
     stop = false;
     nIters = 0;
-
+    firstMeanDelta = 0;
     while(!stop)
     {
-        maxDelta = 0;
-        totDisplacement = 0;
+        nIters++;
+        meanDelta = 0;
 
         for(std::unique_ptr<ConstraintTask> const &tsk : tasks_)
-            maxDelta = std::max(maxDelta, tsk->solve(nets_));
+            meanDelta += tsk->solve(nets_);
 
-        nIters++;
 
         if(nIters >= maxIters_)
         {
             stop = true;
             returnCode = ReturnCode::REACHED_MAX_ITERS;
         }
+        else if(meanDelta <= absTol_ + firstMeanDelta * relTol_)
+        {
+            stop = true;
+            returnCode = ReturnCode::CONVERGENCE;
+        }
+
+        if(firstMeanDelta == 0)
+            firstMeanDelta = meanDelta;
     }
 
     nIters_ = nIters;
-    totDisplacement_ = totDisplacement;
-    maxDelta_ = maxDelta;
+    totDisplacement_ = meanDelta;
+    maxDelta_ = meanDelta;
 
     return returnCode;
 }

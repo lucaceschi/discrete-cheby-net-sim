@@ -17,7 +17,6 @@
 
 const Eigen::Vector2i SimulatorApp::WINDOW_SIZE = {1200, 800};
 const bool SimulatorApp::WINDOW_RESIZABLE = true;
-const int SimulatorApp::SIM_FPS_CAP = 600000000;
 const GLclampf SimulatorApp::RENDER_BG_COLOR[3] = {0.95, 0.95, 0.95};
 
 SimulatorApp::SimulatorApp(std::string sceneName, Json::Value sceneConfig)
@@ -60,6 +59,10 @@ bool SimulatorApp::initApp()
         int maxIters;
         TRY_PARSE("Parsing max_iters of constraint solver",
             maxIters = solverObj["max_iters"].asInt();
+        );
+
+        TRY_PARSE("Parsing max_fps of constraint solver",
+            solverFpsCap_ = solverObj["max_fps"].asInt();
         );
 
         solver_ = new ConstraintSolver(nets_, nNets_, absTol, relTol, maxIters);
@@ -106,6 +109,11 @@ bool SimulatorApp::initApp()
                 edgeLength = netsArray[n]["edge_length"].asFloat();
             );
 
+            float shearLimit;
+            TRY_PARSE("Parsing shear_angle_limit of net " + std::to_string(n),
+                shearLimit = netsArray[n]["shear_angle_limit"].asFloat();
+            );
+
             GLubyte color[3];
             TRY_PARSE("Parsing color of net " + std::to_string(n),
                 for(int i = 0; i < 3; i++)
@@ -118,7 +126,8 @@ bool SimulatorApp::initApp()
             nets_.push_back(new Net(size, edgeLength, center, xTangVec, yTangVec, color));
             totNodes_ += nets_[n]->getNNodes();
 
-            solver_->addConstraint(std::make_unique<EdgeLengthConstraint>(nets_, n, edgeLength));
+            solver_->addConstraint(std::make_unique<EdgeLengthConstraint>(n, edgeLength));
+            solver_->addConstraint(std::make_unique<ShearLimitConstr>(n, edgeLength, shearLimit));
         }
 
         // initialize force        
@@ -135,7 +144,7 @@ bool SimulatorApp::initApp()
         if(forceType == "constant")
         {
             Eigen::Vector3f translationVec;
-            TRY_PARSE("Parsing translation_vector",
+            TRY_PARSE("Parsing translation_vector of constant force",
                 translationVec = Eigen::Vector3f(forceObj["translation_vector"][0].asFloat(),
                                                  forceObj["translation_vector"][1].asFloat(),
                                                  forceObj["translation_vector"][2].asFloat());
@@ -146,6 +155,38 @@ bool SimulatorApp::initApp()
         // TODO: else if...
         else
             throw "invalid type of force";
+
+        // initialize collider
+
+        Json::Value& colliderObj = sceneConfig_["collider"];
+        if(colliderObj.isNull() || !colliderObj.isObject())
+            throw "No collider specified";
+
+        std::string colliderType;
+        TRY_PARSE("Parsing type of force",
+            colliderType = colliderObj["type"].asString();
+        );
+
+        if(colliderType == "sphere")
+        {
+            Eigen::Vector3f origin;
+            TRY_PARSE("Parsing origin of sphere collider",
+                origin = Eigen::Vector3f(colliderObj["origin"][0].asFloat(),
+                                         colliderObj["origin"][1].asFloat(),
+                                         colliderObj["origin"][2].asFloat());
+            );
+
+            float radius;
+            TRY_PARSE("Parsing radius of sphere collider",
+                radius = colliderObj["radius"].asFloat();
+            );
+
+            for(int n = 0; n < nNets_; n++)
+                solver_->addConstraint(std::make_unique<SphereCollConstr>(n, origin, radius));
+        }
+        // TODO: else if...
+        else
+            throw "invalid type of collider";
     }
     catch(const char* s)
     {
@@ -320,7 +361,8 @@ void SimulatorApp::handleKeyEvents()
 }
 
 void SimulatorApp::simulate() {
-    const std::chrono::duration TIME_STEP = std::chrono::seconds(1) / SIM_FPS_CAP;
+    const std::chrono::duration TIME_STEP = std::chrono::nanoseconds(1000000000) / solverFpsCap_;
+    std::cout << solverFpsCap_ << " " << TIME_STEP.count() << std::endl;
 
     while(!byebye_) {
 
@@ -357,8 +399,6 @@ void SimulatorApp::simulate() {
             frmwrk::Debug::logWarning("Constraint solver reached max iters, stopping");
             playSim_ = false;
         }
-
-        playSim_ = false;
 
         while(std::chrono::high_resolution_clock::now() < minEndTime)
             std::this_thread::yield();

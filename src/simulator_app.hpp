@@ -20,7 +20,6 @@ class SimulatorApp : public frmwrk::App
 private:
     static const Eigen::Vector2i WINDOW_SIZE;
     static const bool WINDOW_RESIZABLE;
-    static const int SIM_FPS_CAP;
     static const GLclampf RENDER_BG_COLOR[3];
 
     enum class CameraProjection { PERSP, ORTHO };
@@ -65,6 +64,7 @@ private:
     bool applyForce_;
     
     ConstraintSolver* solver_;
+    int solverFpsCap_;
 
     bool playSim_;
     std::thread simThread_;
