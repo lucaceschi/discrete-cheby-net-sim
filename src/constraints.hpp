@@ -13,6 +13,7 @@ class ConstraintTask
 {
 public:
     virtual float solve(std::vector<Net*>& nets) const = 0;
+    virtual int nConstraints(std::vector<Net*>& nets) const = 0;
 };
 
 
@@ -22,6 +23,7 @@ public:
     EdgeLengthConstraint(int netIndex, float edgeLength);
     
     float solve(std::vector<Net*>& nets) const;
+    int nConstraints(std::vector<Net*>& nets) const;
 
 private:
     int netIdx_;
@@ -35,6 +37,7 @@ public:
     SphereCollConstr(int netIdx, Eigen::Vector3f centerPos, float radius);
 
     float solve(std::vector<Net*>& nets) const;
+    int nConstraints(std::vector<Net*>& nets) const;
 
 private:
     Eigen::Vector3f centerPos_;
@@ -48,7 +51,8 @@ class ShearLimitConstr : public ConstraintTask
 public:
     ShearLimitConstr(int netIdx, float edgeLength, float minRadians);
 
-    virtual float solve(std::vector<Net*>& nets) const;
+    float solve(std::vector<Net*>& nets) const;
+    int nConstraints(std::vector<Net*>& nets) const;
     void setLimit(float edgeLength, float minRadians);
 
 private:

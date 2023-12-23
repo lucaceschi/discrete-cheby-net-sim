@@ -27,6 +27,7 @@ ConstraintSolver::ReturnCode ConstraintSolver::solve()
     static bool stop;
     static int nIters;
     static float meanDelta;
+    static int totConstraints;
     static float firstMeanDelta;
     static float totPrevNorm;
     static ConstraintSolver::ReturnCode returnCode;
@@ -38,10 +39,15 @@ ConstraintSolver::ReturnCode ConstraintSolver::solve()
     {
         nIters++;
         meanDelta = 0;
+        totConstraints = 0;
 
         for(std::unique_ptr<ConstraintTask> const &tsk : tasks_)
+        {
             meanDelta += tsk->solve(nets_);
+            totConstraints += tsk->nConstraints(nets_);
+        }
 
+        meanDelta /= totConstraints;
 
         if(nIters >= maxIters_)
         {
@@ -59,8 +65,7 @@ ConstraintSolver::ReturnCode ConstraintSolver::solve()
     }
 
     nIters_ = nIters;
-    totDisplacement_ = meanDelta;
-    maxDelta_ = meanDelta;
+    meanDelta_ = meanDelta;
 
     return returnCode;
 }
@@ -70,12 +75,7 @@ const int ConstraintSolver::getNIters()
     return nIters_;
 }
 
-const float ConstraintSolver::getTotDisplacement()
+const float ConstraintSolver::getMeanDelta()
 {
-    return totDisplacement_;
-}
-
-const float ConstraintSolver::getMaxDelta()
-{
-    return maxDelta_;
+    return meanDelta_;
 }

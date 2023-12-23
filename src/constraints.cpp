@@ -28,7 +28,12 @@ float EdgeLengthConstraint::solve(std::vector<Net*>& nets) const
         meanDelta += std::abs(delta);
     }
 
-    return meanDelta / n->getNEdges();
+    return meanDelta;
+}
+
+int EdgeLengthConstraint::nConstraints(std::vector<Net*>& nets) const
+{
+    return nets[netIdx_]->getNEdges();
 }
 
 
@@ -62,7 +67,12 @@ float ShearLimitConstr::solve(std::vector<Net*>& nets) const
         meanDelta += std::abs(delta);
     }
 
-    return meanDelta / n->getNDiagonals();
+    return meanDelta;
+}
+
+int ShearLimitConstr::nConstraints(std::vector<Net*>& nets) const
+{
+    return nets[netIdx_]->getNDiagonals();
 }
 
 void ShearLimitConstr::setLimit(float edgeLength, float minRadians)
@@ -89,17 +99,14 @@ float SphereCollConstr::solve(std::vector<Net*>& nets) const
 {
     Net* n = nets[netIdx_];
     float currDist, currDelta, meanDelta;
-    int unsatisfCount;
 
     meanDelta = 0;
-    unsatisfCount = 0;
     for(int i = 0; i < n->getNNodes(); i++)
     {            
         currDist = (n->nodePos(i) - centerPos_).norm();
         currDelta = radius_ - currDist; 
         if(currDelta > 0)
         {
-            unsatisfCount++;
             meanDelta += std::pow(currDelta, 2);
             
             if((n->nodePos(i) - centerPos_).isZero())
@@ -109,5 +116,10 @@ float SphereCollConstr::solve(std::vector<Net*>& nets) const
         }
     }
 
-    return (unsatisfCount == 0)? 0 : meanDelta / unsatisfCount;
+    return meanDelta;
+}
+
+int SphereCollConstr::nConstraints(std::vector<Net*>& nets) const
+{
+    return nets[netIdx_]->getNNodes();
 }

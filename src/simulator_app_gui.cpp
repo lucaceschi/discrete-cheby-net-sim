@@ -117,7 +117,7 @@ void SimulatorApp::drawGUI()
         if (ImGui::Begin("##Stats_overlay", nullptr, window_flags))
         {
             ImGui::Text("Number of iterations: %i", solver_->getNIters());
-            ImGui::Text("Final max delta: %f", solver_->getMaxDelta());
+            ImGui::Text("Final mean delta: %f", solver_->getMeanDelta());
             ImGui::Text("Simple overlay\n" "(right-click to change position)");
             ImGui::Separator();
             static float arr[] = { 0.6f, 0.1f, 1.0f, 0.5f, 0.92f, 0.1f, 0.2f };

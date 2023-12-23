@@ -24,8 +24,7 @@ public:
     ReturnCode solve();
 
     const int getNIters();
-    const float getTotDisplacement();
-    const float getMaxDelta();
+    const float getMeanDelta();
 
 private:
     std::vector<Net*>& nets_;
@@ -37,8 +36,7 @@ private:
     std::vector<std::unique_ptr<ConstraintTask>> tasks_;
 
     volatile int nIters_;
-    volatile float totDisplacement_;
-    volatile float maxDelta_;
+    volatile float meanDelta_;
 };
 
 
