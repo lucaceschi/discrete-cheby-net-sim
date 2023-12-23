@@ -159,34 +159,34 @@ bool SimulatorApp::initApp()
         // initialize collider
 
         Json::Value& colliderObj = sceneConfig_["collider"];
-        if(colliderObj.isNull() || !colliderObj.isObject())
-            throw "No collider specified";
-
-        std::string colliderType;
-        TRY_PARSE("Parsing type of force",
-            colliderType = colliderObj["type"].asString();
-        );
-
-        if(colliderType == "sphere")
+        if(!colliderObj.isNull() && colliderObj.isObject())
         {
-            Eigen::Vector3f origin;
-            TRY_PARSE("Parsing origin of sphere collider",
-                origin = Eigen::Vector3f(colliderObj["origin"][0].asFloat(),
-                                         colliderObj["origin"][1].asFloat(),
-                                         colliderObj["origin"][2].asFloat());
+            std::string colliderType;
+            TRY_PARSE("Parsing type of force",
+                colliderType = colliderObj["type"].asString();
             );
 
-            float radius;
-            TRY_PARSE("Parsing radius of sphere collider",
-                radius = colliderObj["radius"].asFloat();
-            );
+            if(colliderType == "sphere")
+            {
+                Eigen::Vector3f origin;
+                TRY_PARSE("Parsing origin of sphere collider",
+                    origin = Eigen::Vector3f(colliderObj["origin"][0].asFloat(),
+                                            colliderObj["origin"][1].asFloat(),
+                                            colliderObj["origin"][2].asFloat());
+                );
 
-            for(int n = 0; n < nNets_; n++)
-                solver_->addConstraint(std::make_unique<SphereCollConstr>(n, origin, radius));
+                float radius;
+                TRY_PARSE("Parsing radius of sphere collider",
+                    radius = colliderObj["radius"].asFloat();
+                );
+
+                for(int n = 0; n < nNets_; n++)
+                    solver_->addConstraint(std::make_unique<SphereCollConstr>(n, origin, radius));
+            }
+            // TODO: else if...
+            else
+                throw "invalid type of collider";
         }
-        // TODO: else if...
-        else
-            throw "invalid type of collider";
     }
     catch(const char* s)
     {
