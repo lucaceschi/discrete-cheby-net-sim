@@ -38,14 +38,14 @@ private:
 class EdgeLengthConstraint : public ConstraintTask
 {
 public:
-    EdgeLengthConstraint(int netIndex, float edgeLength);
+    EdgeLengthConstraint(std::vector<Net*>& nets, int netIndex);
     
     float solve(std::vector<Net*>& nets) const;
     int nConstraints(std::vector<Net*>& nets) const;
 
 private:
     int netIdx_;
-    float edgeLenSquared_;
+    Eigen::ArrayXf edgeLensSquared_;
 };
 
 

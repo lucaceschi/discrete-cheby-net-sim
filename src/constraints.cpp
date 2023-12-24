@@ -52,9 +52,9 @@ int FixedNodeConstraint::nConstraints(std::vector<Net*>& nets) const
 }
 
 
-EdgeLengthConstraint::EdgeLengthConstraint(int netIndex, float edgeLength)
+EdgeLengthConstraint::EdgeLengthConstraint(std::vector<Net*>& nets, int netIndex)
     : netIdx_(netIndex),
-      edgeLenSquared_(std::pow(edgeLength, 2))
+      edgeLensSquared_(nets[netIndex]->edgeLengths.square())
 {}
 
 float EdgeLengthConstraint::solve(std::vector<Net*>& nets) const
@@ -67,7 +67,7 @@ float EdgeLengthConstraint::solve(std::vector<Net*>& nets) const
     {
         Eigen::Vector3f v = n->nodePos(n->edge(e)[0]) - n->nodePos(n->edge(e)[1]);
         float dist = v.squaredNorm();
-        float delta = (edgeLenSquared_ - dist);
+        float delta = (edgeLensSquared_[e] - dist);
         float s = delta / (4 * dist);
         Eigen::Vector3f deltaV = s * v;
 

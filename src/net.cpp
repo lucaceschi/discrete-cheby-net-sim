@@ -14,6 +14,7 @@ Net::Net(Eigen::Vector2i size,
     : pos(3, size[0] * size[1]),
       edges(2, 2 * size[0] * size[1] - size[0] - size[1]),
       diagonals(2, 2 * (size[1] - 1) * (size[0] - 1)),
+      edgeLengths(2 * size[0] * size[1] - size[0] - size[1]),
       color{renderColor[0], renderColor[1], renderColor[2]}
 {
     float width  = (float)(size[1] -  1) * edgeLength;
@@ -39,6 +40,8 @@ Net::Net(Eigen::Vector2i size,
         if(row != 0 && col != size[1] - 1)
             diagonals.col(d++) = Eigen::Array2i(n, n-size[1]+1);
     }
+
+    edgeLengths.fill(edgeLength);
 }
 
 void Net::exportPly(std::string filename) const

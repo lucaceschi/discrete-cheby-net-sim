@@ -31,6 +31,7 @@ struct Net
     Eigen::Matrix3Xf pos;
     Eigen::Array2Xi edges;
     Eigen::Array2Xi diagonals;
+    Eigen::ArrayXf edgeLengths;
     GLubyte color[3];
 };
 

@@ -128,7 +128,7 @@ bool SimulatorApp::initApp()
             nets_.push_back(new Net(size, edgeLength, center, xTangVec, yTangVec, color));
             totNodes_ += nets_[n]->getNNodes();
 
-            solver_->addConstraint(std::make_shared<EdgeLengthConstraint>(n, edgeLength));
+            solver_->addConstraint(std::make_shared<EdgeLengthConstraint>(nets_, n));
             solver_->addConstraint(std::make_shared<ShearLimitConstr>(n, edgeLength, shearLimit));
         }
 
