@@ -81,7 +81,8 @@ void SimulatorApp::drawGUI()
     
     {
         ImGui::Begin("Simulation");
-        static bool playSimGui = playSim_;
+        static bool playSimGui;
+        playSimGui = playSim_;
         if(ImGui::Checkbox("Play sim", &playSimGui))
             playSim_ = playSimGui;
         ImGui::End();

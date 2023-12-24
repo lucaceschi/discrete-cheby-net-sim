@@ -393,7 +393,6 @@ void SimulatorApp::simulate() {
             }
         }
 
-        
         if(solver_->solve() == ConstraintSolver::ReturnCode::REACHED_MAX_ITERS)
         {
             frmwrk::Debug::logWarning("Constraint solver reached max iters, stopping");

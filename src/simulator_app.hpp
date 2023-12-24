@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <thread>
+#include <atomic>
 
 #include <json/json.h>
 #include <Eigen/Dense>
@@ -66,7 +67,7 @@ private:
     ConstraintSolver* solver_;
     int solverFpsCap_;
 
-    bool playSim_;
+    std::atomic<bool> playSim_;
     std::thread simThread_;
     bool byebye_;
 
