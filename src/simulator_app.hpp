@@ -4,16 +4,19 @@
 #include "framework/app.hpp"
 #include "net.hpp"
 #include "forces.hpp"
+#include "constraints.hpp"
 #include "constraint_solver.hpp"
 
 #include <string>
 #include <vector>
 #include <thread>
 #include <atomic>
+#include <memory>
 
 #include <json/json.h>
 #include <Eigen/Dense>
 #include <wrap/gui/trackball.h>
+#include <GL/glew.h>
 
 
 class SimulatorApp : public frmwrk::App
@@ -22,9 +25,22 @@ private:
     static const Eigen::Vector2i WINDOW_SIZE;
     static const bool WINDOW_RESIZABLE;
     static const GLclampf RENDER_BG_COLOR[3];
+    static const GLclampf PICKING_BG_COLOR[3];
 
     enum class CameraProjection { PERSP, ORTHO };
     enum class CameraViewpoint { TOP, FRONT, RIGHT };
+
+    struct Pick
+    {
+        Pick(int netIdx, int nodeIdx, GLfloat depth)
+            : pick(true), netIdx(netIdx), nodeIdx(nodeIdx), depth(depth) {};
+        Pick() : pick(false) {};
+        
+        bool pick;
+        int netIdx;
+        int nodeIdx;
+        GLfloat depth;
+    };
 
 public:
     SimulatorApp(std::string sceneName, Json::Value sceneConfig);
@@ -40,8 +56,8 @@ private:
     void setProjectionMatrix();
     void setModelViewMatrix();
 
-    void drawGridRenderMode();
-    void drawGridPickingMode();
+    void drawNetsRenderMode();
+    void drawNetPickingMode(int netIdx);
     void drawGUI();
 
     void handleMouseEvents();
@@ -71,6 +87,10 @@ private:
     std::thread simThread_;
     bool byebye_;
 
+    Pick pick_;
+    std::shared_ptr<FixedNodeConstraint> fixedCs_;
+
 };
+
 
 #endif

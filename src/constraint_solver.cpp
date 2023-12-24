@@ -17,7 +17,7 @@ ConstraintSolver::ConstraintSolver(std::vector<Net*>& nets, int nNets,
       nIters_(0)
 {}
 
-void ConstraintSolver::addConstraint(std::unique_ptr<ConstraintTask> constraintTask)
+void ConstraintSolver::addConstraint(std::shared_ptr<ConstraintTask> constraintTask)
 {
     tasks_.push_back(std::move(constraintTask));
 }
@@ -41,7 +41,7 @@ ConstraintSolver::ReturnCode ConstraintSolver::solve()
         meanDelta = 0;
         totConstraints = 0;
 
-        for(std::unique_ptr<ConstraintTask> const &tsk : tasks_)
+        for(std::shared_ptr<ConstraintTask> const &tsk : tasks_)
         {
             meanDelta += tsk->solve(nets_);
             totConstraints += tsk->nConstraints(nets_);

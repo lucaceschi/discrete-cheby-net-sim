@@ -19,7 +19,7 @@ public:
     ConstraintSolver(std::vector<Net*>& nets, int nNets,
                      float absoluteTolerance, float relativeTolerance, int maxIterations);
 
-    void addConstraint(std::unique_ptr<ConstraintTask> constraintTask);
+    void addConstraint(std::shared_ptr<ConstraintTask> constraintTask);
 
     ReturnCode solve();
 
@@ -33,7 +33,7 @@ private:
     float absTol_, relTol_;
     int maxIters_;
 
-    std::vector<std::unique_ptr<ConstraintTask>> tasks_;
+    std::vector<std::shared_ptr<ConstraintTask>> tasks_;
 
     volatile int nIters_;
     volatile float meanDelta_;

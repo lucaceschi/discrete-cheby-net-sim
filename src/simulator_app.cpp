@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 #include <imgui.h>
+#include <GL/glew.h>
 
 
 #define TRY_PARSE(errstr, ...) do {                                                                 \
@@ -33,7 +34,8 @@ SimulatorApp::SimulatorApp(std::string sceneName, Json::Value sceneConfig)
       solver_(nullptr),
       playSim_(false),
       simThread_(),
-      byebye_(false)
+      byebye_(false),
+      pick_()
 {}
 
 bool SimulatorApp::initApp()
@@ -126,9 +128,12 @@ bool SimulatorApp::initApp()
             nets_.push_back(new Net(size, edgeLength, center, xTangVec, yTangVec, color));
             totNodes_ += nets_[n]->getNNodes();
 
-            solver_->addConstraint(std::make_unique<EdgeLengthConstraint>(n, edgeLength));
-            solver_->addConstraint(std::make_unique<ShearLimitConstr>(n, edgeLength, shearLimit));
+            solver_->addConstraint(std::make_shared<EdgeLengthConstraint>(n, edgeLength));
+            solver_->addConstraint(std::make_shared<ShearLimitConstr>(n, edgeLength, shearLimit));
         }
+
+        fixedCs_ = std::make_shared<FixedNodeConstraint>(nets_);
+        solver_->addConstraint(fixedCs_);
 
         // initialize force        
 
@@ -181,7 +186,7 @@ bool SimulatorApp::initApp()
                 );
 
                 for(int n = 0; n < nNets_; n++)
-                    solver_->addConstraint(std::make_unique<SphereCollConstr>(n, origin, radius));
+                    solver_->addConstraint(std::make_shared<SphereCollConstr>(n, origin, radius));
             }
             // TODO: else if...
             else
@@ -227,7 +232,7 @@ bool SimulatorApp::mainLoop(double delta)
     handleMouseEvents();
     handleKeyEvents();
 
-    drawGridRenderMode();
+    drawNetsRenderMode();
     drawGUI();
     
     return true;
@@ -268,7 +273,7 @@ void SimulatorApp::setModelViewMatrix()
     trackball_.Apply();
 }
 
-void SimulatorApp::drawGridRenderMode()
+void SimulatorApp::drawNetsRenderMode()
 {
     glClearColor(RENDER_BG_COLOR[0], RENDER_BG_COLOR[1], RENDER_BG_COLOR[2], 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -297,67 +302,19 @@ void SimulatorApp::drawGridRenderMode()
         glPointSize(10.0f * trackball_.track.sca);
 
         glBegin(GL_POINTS);
-        for(int n = 0; n < net.getNNodes(); n++)
+        for(int nodeIdx = 0; nodeIdx < net.getNNodes(); nodeIdx++)
         {
-            const Eigen::Vector3f nodePos = net.nodePos(n);
+            if(fixedCs_->isNodeFixed(netIdx, nodeIdx)
+               || (pick_.pick && pick_.netIdx == netIdx && pick_.nodeIdx == nodeIdx))
+                glColor3ub(0xff, 0x00, 0x00);
+            else
+                glColor3ubv(net.color);
+            
+            const Eigen::Vector3f nodePos = net.nodePos(nodeIdx);
             glVertex3d(nodePos(0), nodePos(1), nodePos(2));
         }
         glEnd();
     }
-}
-
-void SimulatorApp::drawGridPickingMode() {}
-
-void SimulatorApp::handleMouseEvents()
-{
-    if(ImGui::GetIO().WantCaptureMouse)
-        return;
-
-    Eigen::Vector2d curPos = input_.getCursorPos();
-    curPos(0) = curPos(0) * getWindowContentScale()(0);
-    curPos(1) = getFramebufferSize()(1) - curPos(1) * getWindowContentScale()(1);
-
-    if(input_.isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT))
-    {
-        trackball_.MouseDown((int)curPos(0), (int)curPos(1), vcg::Trackball::BUTTON_LEFT);
-    }
-
-    if(input_.isMouseButtonHeld(GLFW_MOUSE_BUTTON_LEFT))
-    {
-        trackball_.MouseMove((int)curPos(0), (int)curPos(1));
-    }
-
-    if(input_.isMouseButtonReleased(GLFW_MOUSE_BUTTON_LEFT))
-    {
-        trackball_.MouseUp((int)curPos(0), (int)curPos(1), vcg::Trackball::BUTTON_LEFT);
-    }
-
-    if(input_.getMouseScrollOffset() != 0)
-    {
-        trackball_.MouseWheel(input_.getMouseScrollOffset());
-    }
-}
-
-void SimulatorApp::handleKeyEvents()
-{
-    if(ImGui::GetIO().WantCaptureKeyboard)
-        return;
-
-    if(input_.isKeyPressed(GLFW_KEY_LEFT_SHIFT))
-        trackball_.ButtonDown(vcg::Trackball::KEY_SHIFT);
-    if(input_.isKeyReleased(GLFW_KEY_LEFT_SHIFT))
-        trackball_.ButtonUp(vcg::Trackball::KEY_SHIFT);
-    if(input_.isKeyPressed(GLFW_KEY_LEFT_CONTROL))
-        trackball_.ButtonDown(vcg::Trackball::KEY_CTRL);
-    if (input_.isKeyReleased(GLFW_KEY_LEFT_CONTROL))
-        trackball_.ButtonUp(vcg::Trackball::KEY_CTRL);
-    if (input_.isKeyPressed(GLFW_KEY_LEFT_ALT))
-        trackball_.ButtonDown(vcg::Trackball::KEY_ALT);
-    if (input_.isKeyReleased(GLFW_KEY_LEFT_ALT))
-        trackball_.ButtonUp(vcg::Trackball::KEY_ALT);
-
-    if(input_.isKeyPressed(GLFW_KEY_SPACE))
-        playSim_ = !playSim_; 
 }
 
 void SimulatorApp::simulate() {

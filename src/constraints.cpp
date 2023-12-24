@@ -3,6 +3,55 @@
 #include <iostream>
 
 
+FixedNodeConstraint::FixedNodeConstraint(std::vector<Net*>& nets)
+    : fixedPos_(nets.size())
+{}
+
+void FixedNodeConstraint::fixNode(std::vector<Net*>& nets, int netIndex, int nodeIndex)
+{
+    fixedPos_[netIndex][nodeIndex] = nets[netIndex]->nodePos(nodeIndex);
+}
+
+bool FixedNodeConstraint::isNodeFixed(int netIndex, int nodeIndex) const
+{
+    return fixedPos_[netIndex].find(nodeIndex) != fixedPos_[netIndex].cend();
+}
+
+void FixedNodeConstraint::freeNode(int netIndex, int nodeIndex)
+{
+    typedef std::unordered_map<int, Eigen::Vector3f>::iterator Iterator;
+    Iterator it = fixedPos_[netIndex].find(nodeIndex);
+
+    if(it != fixedPos_[netIndex].end())
+        fixedPos_[netIndex].erase(it);
+}
+
+float FixedNodeConstraint::solve(std::vector<Net*>& nets) const
+{
+    typedef std::unordered_map<int, Eigen::Vector3f>::const_iterator CIterator;
+    float meanDelta;
+
+    meanDelta = 0;
+    for(int netIdx = 0; netIdx < nets.size(); netIdx++)
+        for(CIterator it = fixedPos_[netIdx].cbegin(); it != fixedPos_[netIdx].cend(); it++)
+        {
+            meanDelta += (nets[netIdx]->nodePos(it->first) - it->second).squaredNorm();
+            nets[netIdx]->nodePos(it->first) = it->second;
+        }
+
+    return meanDelta;
+}
+
+int FixedNodeConstraint::nConstraints(std::vector<Net*>& nets) const
+{
+    int n = 0;
+    for(const auto& m : fixedPos_)
+        n += m.size();
+
+    return n;
+}
+
+
 EdgeLengthConstraint::EdgeLengthConstraint(int netIndex, float edgeLength)
     : netIdx_(netIndex),
       edgeLenSquared_(std::pow(edgeLength, 2))

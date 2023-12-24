@@ -107,6 +107,7 @@ target_link_libraries(${CONVERTER_TARGET}
 set(SIM_SOURCES
     "${SOURCE_DIR}/simulator.cpp"
     "${SOURCE_DIR}/simulator_app.cpp"
+    "${SOURCE_DIR}/simulator_app_events.cpp"
     "${SOURCE_DIR}/simulator_app_gui.cpp"
     "${SOURCE_DIR}/net.cpp"
     "${SOURCE_DIR}/forces.cpp"
