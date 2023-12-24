@@ -185,8 +185,7 @@ bool SimulatorApp::initApp()
                     radius = colliderObj["radius"].asFloat();
                 );
 
-                for(int n = 0; n < nNets_; n++)
-                    solver_->addConstraint(std::make_shared<SphereCollConstr>(n, origin, radius));
+                solver_->addConstraint(std::make_shared<SphereCollConstr>(origin, radius));
             }
             // TODO: else if...
             else

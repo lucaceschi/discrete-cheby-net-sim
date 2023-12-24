@@ -52,14 +52,13 @@ private:
 class SphereCollConstr : public ConstraintTask
 {
 public:
-    SphereCollConstr(int netIdx, Eigen::Vector3f centerPos, float radius);
+    SphereCollConstr(Eigen::Vector3f centerPos, float radius);
 
     float solve(std::vector<Net*>& nets) const;
     int nConstraints(std::vector<Net*>& nets) const;
 
 private:
     Eigen::Vector3f centerPos_;
-    int netIdx_;
     float radius_;
 };
 

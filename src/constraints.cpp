@@ -138,30 +138,33 @@ void ShearLimitConstr::setLimit(float edgeLength, float minRadians)
 }
 
 
-SphereCollConstr::SphereCollConstr(int netIdx, Eigen::Vector3f centerPos, float radius)
-    : netIdx_(netIdx),
-        centerPos_(centerPos),
-        radius_(radius)
+SphereCollConstr::SphereCollConstr(Eigen::Vector3f centerPos, float radius)
+    : centerPos_(centerPos),
+      radius_(radius)
 {}
 
 float SphereCollConstr::solve(std::vector<Net*>& nets) const
 {
-    Net* n = nets[netIdx_];
     float currDist, currDelta, meanDelta;
 
     meanDelta = 0;
-    for(int i = 0; i < n->getNNodes(); i++)
-    {            
-        currDist = (n->nodePos(i) - centerPos_).norm();
-        currDelta = radius_ - currDist; 
-        if(currDelta > 0)
-        {
-            meanDelta += std::pow(currDelta, 2);
-            
-            if((n->nodePos(i) - centerPos_).isZero())
-                n->nodePos(i) += Eigen::Vector3f{0, radius_, 0};
-            else
-                n->nodePos(i) = (n->nodePos(i) - centerPos_) * (radius_ / currDist) + centerPos_;
+    for(int netIdx = 0; netIdx < nets.size(); netIdx++)
+    {
+        Net* n = nets[netIdx];
+
+        for(int i = 0; i < n->getNNodes(); i++)
+        {            
+            currDist = (n->nodePos(i) - centerPos_).norm();
+            currDelta = radius_ - currDist; 
+            if(currDelta > 0)
+            {
+                meanDelta += std::pow(currDelta, 2);
+                
+                if((n->nodePos(i) - centerPos_).isZero())
+                    n->nodePos(i) += Eigen::Vector3f{0, radius_, 0};
+                else
+                    n->nodePos(i) = (n->nodePos(i) - centerPos_) * (radius_ / currDist) + centerPos_;
+            }
         }
     }
 
@@ -170,5 +173,9 @@ float SphereCollConstr::solve(std::vector<Net*>& nets) const
 
 int SphereCollConstr::nConstraints(std::vector<Net*>& nets) const
 {
-    return nets[netIdx_]->getNNodes();
+    int n = 0;
+    for(const Net* net : nets)
+        n += net->getNNodes();
+
+    return n;
 }
