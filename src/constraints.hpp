@@ -26,6 +26,7 @@ public:
     void fixNode(std::vector<Net*>& nets, int netIndex, int nodeIndex);
     bool isNodeFixed(int netIndex, int nodeIndex) const;
     void freeNode(int netIndex, int nodeIndex);
+    void freeNodes(int netIndex);
 
     float solve(std::vector<Net*>& nets) const;
     int nConstraints(std::vector<Net*>& nets) const;

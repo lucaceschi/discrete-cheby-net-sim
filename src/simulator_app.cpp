@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <chrono>
+#include <vector>
+#include <map>
 
 #include <Eigen/Dense>
 #include <imgui.h>
@@ -358,5 +360,153 @@ void SimulatorApp::simulate() {
 
         while(std::chrono::high_resolution_clock::now() < minEndTime)
             std::this_thread::yield();
+    }
+}
+
+
+void SimulatorApp::cutNets()
+{
+    const Eigen::Vector3f cutPlaneNormal = {0, 1, 0};
+
+    std::vector< std::vector<Eigen::Vector3f> > newNodes        (nets_.size());
+    std::vector< std::unordered_map<int, int> > nodeIndexMap    (nets_.size());
+    std::vector< std::vector<Eigen::Array2i>  > newEdges        (nets_.size());
+    //std::vector< std::unordered_map<int, int> > edgeIndexMaps   (nets_.size());
+    std::vector< std::vector<float>           > newEdgeLengths  (nets_.size());
+    std::vector< std::vector<Net::Quad>       > newQuads        (nets_.size());
+    std::vector< std::vector<Eigen::Array2i>  > newDiagonals    (nets_.size());
+    std::vector< std::vector<int>             > newFixedNodes   (nets_.size());
+    
+    totNodes_ = 0;
+    // cutting edges occurs for each net independently
+    for(int netIdx = 0; netIdx < nets_.size(); netIdx++)
+    {
+        Net* net = nets_[netIdx];
+
+        // first, preserve all nodes above the cutting plane
+        for(int nodeIdx = 0; nodeIdx < net->getNNodes(); nodeIdx++)
+        {
+            const Eigen::Vector3f p = net->nodePos(nodeIdx);
+
+            if(p(1) < 0)
+                continue;
+
+            newNodes[netIdx].push_back(p);
+            nodeIndexMap[netIdx][nodeIdx] = newNodes[netIdx].size() - 1;
+        }
+
+        // only preserve quads formed by nodes above the cutting plane
+        for(int quadIdx = 0; quadIdx < net->quads.size(); quadIdx++)
+        {
+            auto node1IndexPair = nodeIndexMap[netIdx].find(net->quads[quadIdx].node1Index);
+            auto node2IndexPair = nodeIndexMap[netIdx].find(net->quads[quadIdx].node2Index);
+            auto node3IndexPair = nodeIndexMap[netIdx].find(net->quads[quadIdx].node3Index);
+            auto node4IndexPair = nodeIndexMap[netIdx].find(net->quads[quadIdx].node4Index);
+
+            if(node1IndexPair != nodeIndexMap[netIdx].cend() &&
+               node2IndexPair != nodeIndexMap[netIdx].cend() &&
+               node3IndexPair != nodeIndexMap[netIdx].cend() &&
+               node4IndexPair != nodeIndexMap[netIdx].cend())
+            {
+                newQuads[netIdx].emplace_back(Net::Quad{node1IndexPair->second,
+                                                        node2IndexPair->second,
+                                                        node3IndexPair->second,
+                                                        node4IndexPair->second});
+
+                newDiagonals[netIdx].emplace_back(node1IndexPair->second, node3IndexPair->second);
+                newDiagonals[netIdx].emplace_back(node2IndexPair->second, node4IndexPair->second);
+            }
+        }
+
+        for(int edgeIdx = 0; edgeIdx < net->getNEdges(); edgeIdx++)
+        {
+            auto p1IndexPair = nodeIndexMap[netIdx].find(net->edge(edgeIdx)[0]);
+            auto p2IndexPair = nodeIndexMap[netIdx].find(net->edge(edgeIdx)[1]);
+
+            // scrap edges below the cutting plane
+            if(p1IndexPair == nodeIndexMap[netIdx].end() && p2IndexPair == nodeIndexMap[netIdx].end())
+                continue;
+
+            int p1Index, p2Index;
+            double edgeLength;
+            
+            if(p1IndexPair != nodeIndexMap[netIdx].end() && p2IndexPair != nodeIndexMap[netIdx].end())
+            {
+                // edge is above the cutting plane, preserve it
+                p1Index = p1IndexPair->second;
+                p2Index = p2IndexPair->second;
+                edgeLength = net->edgeLengths[edgeIdx];
+            }
+            else
+            {
+                // edge crosses the cutting plane: retrieve the node below the cutting plane
+                // and move it to the closest intersection between the edge and the plane
+
+                Eigen::Vector3f newNodePos;
+                Eigen::Vector3f edgeVec = (net->nodePos(net->edge(edgeIdx)[0])
+                                           - net->nodePos(net->edge(edgeIdx)[1])).normalized();
+
+                if(p1IndexPair == nodeIndexMap[netIdx].end())
+                {
+                    newNodePos = net->nodePos(net->edge(edgeIdx)[0]);
+                    p1Index = newNodes[netIdx].size();
+                    p2Index = p2IndexPair->second;
+                }
+                else
+                {
+                    newNodePos = net->nodePos(net->edge(edgeIdx)[1]);
+                    p1Index = p1IndexPair->second;
+                    p2Index = newNodes[netIdx].size();
+                }
+
+                double deltaLength = newNodePos.dot(cutPlaneNormal) / edgeVec.dot(cutPlaneNormal);
+
+                newNodePos -= (deltaLength * edgeVec);
+                edgeLength = net->edgeLengths[edgeIdx] - abs(deltaLength);
+                newNodes[netIdx].push_back(newNodePos);
+                newFixedNodes[netIdx].push_back(newNodes[netIdx].size());
+            }
+
+            newEdges[netIdx].emplace_back(p1Index, p2Index);
+            newEdgeLengths[netIdx].push_back(edgeLength);
+        }
+
+        // create the new net
+
+        Eigen::Matrix3Xf newNodeMatrix(3, newNodes[netIdx].size());
+        for(int nodeIdx = 0; nodeIdx < newNodes[netIdx].size(); nodeIdx++)
+            newNodeMatrix.col(nodeIdx) = newNodes[netIdx][nodeIdx];
+
+        Eigen::Array2Xi newEdgesMatrix(2, newEdges[netIdx].size());
+        Eigen::ArrayXf newEdgesLengthsArray(newEdges[netIdx].size());
+        for(int edgeIdx = 0; edgeIdx < newEdges[netIdx].size(); edgeIdx++)
+        {
+            newEdgesMatrix.col(edgeIdx) = newEdges[netIdx][edgeIdx];
+            newEdgesLengthsArray[edgeIdx] = newEdgeLengths[netIdx][edgeIdx];
+        }
+
+        Eigen::Array2Xi newDiagonalsMatrix(2, newDiagonals[netIdx].size());
+        for(int diagIdx = 0; diagIdx < newDiagonals[netIdx].size(); diagIdx++)
+            newDiagonalsMatrix.col(diagIdx) = newDiagonals[netIdx][diagIdx];
+
+        GLubyte netColor[3];
+        memcpy(netColor, nets_[netIdx]->renderColor, 3);
+        delete nets_[netIdx];
+        nets_[netIdx] = new Net(newNodeMatrix,
+                                newEdgesMatrix,
+                                newEdgesLengthsArray,
+                                newDiagonalsMatrix,
+                                newQuads[netIdx],
+                                netColor);
+
+        totNodes_ += newNodes[netIdx].size();
+
+        // update constraints
+
+        edgeLenCs_[netIdx]->updateEdgeLengths(nets_);
+
+        fixedCs_->freeNodes(netIdx);
+        for(int i : newFixedNodes[netIdx])
+            fixedCs_->fixNode(nets_, netIdx, i);
     }
 }

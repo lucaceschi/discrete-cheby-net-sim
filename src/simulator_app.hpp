@@ -64,6 +64,7 @@ private:
     void handleKeyEvents();
 
     void simulate();
+    void cutNets();
 
     // - - - -
 

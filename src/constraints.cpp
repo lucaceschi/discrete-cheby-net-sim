@@ -26,6 +26,11 @@ void FixedNodeConstraint::freeNode(int netIndex, int nodeIndex)
         fixedPos_[netIndex].erase(it);
 }
 
+void FixedNodeConstraint::freeNodes(int netIndex)
+{
+    fixedPos_[netIndex].clear();
+}
+
 float FixedNodeConstraint::solve(std::vector<Net*>& nets) const
 {
     typedef std::unordered_map<int, Eigen::Vector3f>::const_iterator CIterator;

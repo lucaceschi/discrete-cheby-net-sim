@@ -56,6 +56,13 @@ void SimulatorApp::drawGUI()
                 ImGui::EndMenu();
             }
 
+            if(ImGui::BeginMenu("Nets"))
+            {
+                if(ImGui::MenuItem("Cut and fix nets"))
+                    cutNets();
+                ImGui::EndMenu();
+            }
+
             if(ImGui::BeginMenu("Camera"))
             {
                 ImGui::MenuItem("Ortho proj", nullptr, (bool*)&cameraMode_);
@@ -75,6 +82,7 @@ void SimulatorApp::drawGUI()
                     setViewpoint(CameraViewpoint::RIGHT);
                 ImGui::EndMenu();
             }
+
             ImGui::EndMainMenuBar();
         }
     }
