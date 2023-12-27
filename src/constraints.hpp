@@ -40,6 +40,8 @@ class EdgeLengthConstraint : public ConstraintTask
 public:
     EdgeLengthConstraint(std::vector<Net*>& nets, int netIndex);
     
+    void updateEdgeLengths(std::vector<Net*>& nets);
+
     float solve(std::vector<Net*>& nets) const;
     int nConstraints(std::vector<Net*>& nets) const;
 

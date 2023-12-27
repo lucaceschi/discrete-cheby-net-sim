@@ -53,9 +53,15 @@ int FixedNodeConstraint::nConstraints(std::vector<Net*>& nets) const
 
 
 EdgeLengthConstraint::EdgeLengthConstraint(std::vector<Net*>& nets, int netIndex)
-    : netIdx_(netIndex),
-      edgeLensSquared_(nets[netIndex]->edgeLengths.square())
-{}
+    : netIdx_(netIndex)
+{
+    updateEdgeLengths(nets);
+}
+
+void EdgeLengthConstraint::updateEdgeLengths(std::vector<Net*>& nets)
+{
+    edgeLensSquared_ = Eigen::ArrayXf(nets[netIdx_]->edgeLengths.square());
+}
 
 float EdgeLengthConstraint::solve(std::vector<Net*>& nets) const
 {

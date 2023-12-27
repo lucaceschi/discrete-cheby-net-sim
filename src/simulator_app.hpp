@@ -79,6 +79,8 @@ private:
     Force* force_;
     bool applyForce_;
     
+    std::shared_ptr<FixedNodeConstraint> fixedCs_;
+    std::vector<std::shared_ptr<EdgeLengthConstraint>> edgeLenCs_;
     ConstraintSolver* solver_;
     int solverFpsCap_;
 
@@ -87,7 +89,6 @@ private:
     bool byebye_;
 
     Pick pick_;
-    std::shared_ptr<FixedNodeConstraint> fixedCs_;
 
 };
 

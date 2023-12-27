@@ -76,6 +76,7 @@ bool SimulatorApp::initApp()
 
         int nNets = netsArray.size();
         nets_.reserve(nNets);
+        edgeLenCs_.reserve(nNets);
         for(int n = 0; n < nNets; n++)
         {
             Eigen::Vector2i size;
@@ -127,7 +128,9 @@ bool SimulatorApp::initApp()
             nets_.push_back(new Net(size, edgeLength, center, xTangVec, yTangVec, color));
             totNodes_ += nets_[n]->getNNodes();
 
-            solver_->addConstraint(std::make_shared<EdgeLengthConstraint>(nets_, n));
+            edgeLenCs_.push_back(std::make_shared<EdgeLengthConstraint>(nets_, n));
+            solver_->addConstraint(edgeLenCs_.back());
+
             solver_->addConstraint(std::make_shared<ShearLimitConstr>(n, edgeLength, shearLimit));
         }
 
@@ -282,7 +285,7 @@ void SimulatorApp::drawNetsRenderMode()
         
         // Draw edges
 
-        glColor3ubv(net.color);
+        glColor3ubv(net.renderColor);
         glLineWidth(2.0f * trackball_.track.sca);
 
         glBegin(GL_LINES);
@@ -306,7 +309,7 @@ void SimulatorApp::drawNetsRenderMode()
                || (pick_.pick && pick_.netIdx == netIdx && pick_.nodeIdx == nodeIdx))
                 glColor3ub(0xff, 0x00, 0x00);
             else
-                glColor3ubv(net.color);
+                glColor3ubv(net.renderColor);
             
             const Eigen::Vector3f nodePos = net.nodePos(nodeIdx);
             glVertex3d(nodePos(0), nodePos(1), nodePos(2));
@@ -317,7 +320,6 @@ void SimulatorApp::drawNetsRenderMode()
 
 void SimulatorApp::simulate() {
     const std::chrono::duration TIME_STEP = std::chrono::nanoseconds(1000000000) / solverFpsCap_;
-    std::cout << solverFpsCap_ << " " << TIME_STEP.count() << std::endl;
 
     while(!byebye_) {
 
