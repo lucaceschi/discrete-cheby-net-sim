@@ -6,10 +6,9 @@
 #include <omp.h>
 
 
-ConstraintSolver::ConstraintSolver(std::vector<Net*>& nets, int nNets,
-                        float absoluteTolerance, float relativeTolerance, int maxIterations)
+ConstraintSolver::ConstraintSolver(std::vector<Net*>& nets,
+                                   float absoluteTolerance, float relativeTolerance, int maxIterations)
     : nets_(nets),
-      nNets_(nNets),
       absTol_(absoluteTolerance),
       relTol_(relativeTolerance),
       maxIters_(maxIterations),

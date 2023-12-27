@@ -73,7 +73,6 @@ private:
     CameraViewpoint cameraViewpoint_;
     vcg::Trackball trackball_;
 
-    int nNets_;
     std::vector<Net*> nets_;
     int totNodes_;
 

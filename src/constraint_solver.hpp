@@ -16,7 +16,7 @@ public:
     enum class ReturnCode { CONVERGENCE, REACHED_MAX_ITERS };
     
     ConstraintSolver();
-    ConstraintSolver(std::vector<Net*>& nets, int nNets,
+    ConstraintSolver(std::vector<Net*>& nets,
                      float absoluteTolerance, float relativeTolerance, int maxIterations);
 
     void addConstraint(std::shared_ptr<ConstraintTask> constraintTask);
@@ -28,7 +28,6 @@ public:
 
 private:
     std::vector<Net*>& nets_;
-    int nNets_;
 
     float absTol_, relTol_;
     int maxIters_;

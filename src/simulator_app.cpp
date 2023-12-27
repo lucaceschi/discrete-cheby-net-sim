@@ -26,7 +26,6 @@ SimulatorApp::SimulatorApp(std::string sceneName, Json::Value sceneConfig)
       cameraMode_(CameraProjection::PERSP),
       cameraViewpoint_(CameraViewpoint::TOP),
       trackball_(),
-      nNets_(0),
       nets_(),
       totNodes_(0),
       force_(nullptr),
@@ -67,17 +66,17 @@ bool SimulatorApp::initApp()
             solverFpsCap_ = solverObj["max_fps"].asInt();
         );
 
-        solver_ = new ConstraintSolver(nets_, nNets_, absTol, relTol, maxIters);
+        solver_ = new ConstraintSolver(nets_, absTol, relTol, maxIters);
         
         // initialize nets
         
         Json::Value& netsArray = sceneConfig_["nets"];
         if(netsArray.isNull() || !netsArray.isArray() || netsArray.size() == 0)
             throw "No nets specified";
-        nNets_ = netsArray.size();
-        nets_.reserve(nNets_);
 
-        for(int n = 0; n < netsArray.size(); n++)
+        int nNets = netsArray.size();
+        nets_.reserve(nNets);
+        for(int n = 0; n < nNets; n++)
         {
             Eigen::Vector2i size;
             TRY_PARSE("Parsing size of net " + std::to_string(n), 
@@ -277,7 +276,7 @@ void SimulatorApp::drawNetsRenderMode()
     glClearColor(RENDER_BG_COLOR[0], RENDER_BG_COLOR[1], RENDER_BG_COLOR[2], 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    for(int netIdx = 0; netIdx < nNets_; netIdx++)
+    for(int netIdx = 0; netIdx < nets_.size(); netIdx++)
     {
         Net& net = *nets_[netIdx];
         

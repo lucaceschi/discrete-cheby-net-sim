@@ -42,7 +42,7 @@ void SimulatorApp::drawGUI()
                 ImGui::SameLine();
                 if(pressedEnter || ImGui::Button("Export"))
                 {
-                    for(int n = 0; n < nNets_; n++)
+                    for(int n = 0; n < nets_.size(); n++)
                         nets_[n]->exportPly(std::string(filename) + "_" + std::to_string(n) + ".ply");
                     ImGui::CloseCurrentPopup();
                 }
