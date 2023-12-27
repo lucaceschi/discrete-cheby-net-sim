@@ -82,6 +82,8 @@ private:
     
     std::shared_ptr<FixedNodeConstraint> fixedCs_;
     std::vector<std::shared_ptr<EdgeLengthConstraint>> edgeLenCs_;
+    std::shared_ptr<ShearLimitConstr> shearLimitCs_;
+    std::shared_ptr<ConstraintTask> collisionCs_;
     ConstraintSolver* solver_;
     int solverFpsCap_;
 

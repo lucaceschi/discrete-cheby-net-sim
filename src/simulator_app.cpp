@@ -133,7 +133,8 @@ bool SimulatorApp::initApp()
             edgeLenCs_.push_back(std::make_shared<EdgeLengthConstraint>(nets_, n));
             solver_->addConstraint(edgeLenCs_.back());
 
-            solver_->addConstraint(std::make_shared<ShearLimitConstr>(n, edgeLength, shearLimit));
+            shearLimitCs_ = std::make_shared<ShearLimitConstr>(n, edgeLength, shearLimit);
+            solver_->addConstraint(shearLimitCs_);
         }
 
         fixedCs_ = std::make_shared<FixedNodeConstraint>(nets_);
@@ -189,7 +190,8 @@ bool SimulatorApp::initApp()
                     radius = colliderObj["radius"].asFloat();
                 );
 
-                solver_->addConstraint(std::make_shared<SphereCollConstr>(origin, radius));
+                collisionCs_ = std::make_shared<SphereCollConstr>(origin, radius);
+                solver_->addConstraint(collisionCs_);
             }
             // TODO: else if...
             else

@@ -3,6 +3,16 @@
 #include <iostream>
 
 
+ConstraintTask::ConstraintTask()
+    : active(true)
+{}
+
+float ConstraintTask::solve(std::vector<Net*>& nets) const
+{
+    return (active)? solve_(nets) : 0;
+}
+
+
 FixedNodeConstraint::FixedNodeConstraint(std::vector<Net*>& nets)
     : fixedPos_(nets.size())
 {}
@@ -31,7 +41,7 @@ void FixedNodeConstraint::freeNodes(int netIndex)
     fixedPos_[netIndex].clear();
 }
 
-float FixedNodeConstraint::solve(std::vector<Net*>& nets) const
+float FixedNodeConstraint::solve_(std::vector<Net*>& nets) const
 {
     typedef std::unordered_map<int, Eigen::Vector3f>::const_iterator CIterator;
     float meanDelta;
@@ -68,7 +78,7 @@ void EdgeLengthConstraint::updateEdgeLengths(std::vector<Net*>& nets)
     edgeLensSquared_ = Eigen::ArrayXf(nets[netIdx_]->edgeLengths.square());
 }
 
-float EdgeLengthConstraint::solve(std::vector<Net*>& nets) const
+float EdgeLengthConstraint::solve_(std::vector<Net*>& nets) const
 {
     Net* n = nets[netIdx_];
     float meanDelta;
@@ -103,7 +113,7 @@ ShearLimitConstr::ShearLimitConstr(int netIdx, float edgeLength, float minRadian
     setLimit(edgeLength, minRadians);
 }
 
-float ShearLimitConstr::solve(std::vector<Net*>& nets) const
+float ShearLimitConstr::solve_(std::vector<Net*>& nets) const
 {
     Net* n = nets[netIdx_];
     float meanDelta;
@@ -154,7 +164,7 @@ SphereCollConstr::SphereCollConstr(Eigen::Vector3f centerPos, float radius)
       radius_(radius)
 {}
 
-float SphereCollConstr::solve(std::vector<Net*>& nets) const
+float SphereCollConstr::solve_(std::vector<Net*>& nets) const
 {
     float currDist, currDelta, meanDelta;
 

@@ -13,8 +13,14 @@
 class ConstraintTask
 {
 public:
-    virtual float solve(std::vector<Net*>& nets) const = 0;
+    ConstraintTask();
+    float solve(std::vector<Net*>& nets) const;
     virtual int nConstraints(std::vector<Net*>& nets) const = 0;
+
+    bool active;
+
+private:
+    virtual float solve_(std::vector<Net*>& nets) const = 0;
 };
 
 
@@ -28,10 +34,11 @@ public:
     void freeNode(int netIndex, int nodeIndex);
     void freeNodes(int netIndex);
 
-    float solve(std::vector<Net*>& nets) const;
     int nConstraints(std::vector<Net*>& nets) const;
 
 private:
+    float solve_(std::vector<Net*>& nets) const;
+
     std::vector<std::unordered_map<int, Eigen::Vector3f>> fixedPos_;
 };
 
@@ -43,10 +50,11 @@ public:
     
     void updateEdgeLengths(std::vector<Net*>& nets);
 
-    float solve(std::vector<Net*>& nets) const;
     int nConstraints(std::vector<Net*>& nets) const;
 
 private:
+    float solve_(std::vector<Net*>& nets) const;
+
     int netIdx_;
     Eigen::ArrayXf edgeLensSquared_;
 };
@@ -57,10 +65,11 @@ class SphereCollConstr : public ConstraintTask
 public:
     SphereCollConstr(Eigen::Vector3f centerPos, float radius);
 
-    float solve(std::vector<Net*>& nets) const;
     int nConstraints(std::vector<Net*>& nets) const;
 
 private:
+    float solve_(std::vector<Net*>& nets) const;
+
     Eigen::Vector3f centerPos_;
     float radius_;
 };
@@ -71,11 +80,12 @@ class ShearLimitConstr : public ConstraintTask
 public:
     ShearLimitConstr(int netIdx, float edgeLength, float minRadians);
 
-    float solve(std::vector<Net*>& nets) const;
     int nConstraints(std::vector<Net*>& nets) const;
     void setLimit(float edgeLength, float minRadians);
 
 private:
+    float solve_(std::vector<Net*>& nets) const;
+
     int netIdx_;
     float squaredLen_;
 };
