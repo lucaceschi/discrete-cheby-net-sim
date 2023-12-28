@@ -67,11 +67,11 @@ public:
 
     int nConstraints(std::vector<Net*>& nets) const;
 
+    Eigen::Vector3f centerPos;
+    float radius;
+
 private:
     float solve_(std::vector<Net*>& nets) const;
-
-    Eigen::Vector3f centerPos_;
-    float radius_;
 };
 
 
@@ -81,13 +81,16 @@ public:
     ShearLimitConstr(int netIdx, float edgeLength, float minRadians);
 
     int nConstraints(std::vector<Net*>& nets) const;
-    void setLimit(float edgeLength, float minRadians);
+    float getLimit();
+    void setLimit(float minRadians);
 
 private:
     float solve_(std::vector<Net*>& nets) const;
 
     int netIdx_;
+    float len_;
     float squaredLen_;
+    float minRadians_;
 };
 
 

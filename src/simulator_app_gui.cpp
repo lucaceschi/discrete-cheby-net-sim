@@ -3,6 +3,9 @@
 #include <imgui.h>
 
 
+#define DRAG_FLOAT_SPEED 1e-3
+
+
 void initGUI()
 {
     ImGui::GetIO().Fonts->AddFontFromFileTTF("DroidSans.ttf", 14.0);
@@ -31,6 +34,8 @@ void initGUI()
 
 void SimulatorApp::drawGUI()
 {
+    ImGui::ShowDemoWindow();
+    
     {
         if(ImGui::BeginMainMenuBar())
         {           
@@ -89,10 +94,58 @@ void SimulatorApp::drawGUI()
     
     {
         ImGui::Begin("Simulation");
+        
+        ImGui::SeparatorText("Controls");
+
         static bool playSimGui;
         playSimGui = playSim_;
         if(ImGui::Checkbox("Play sim", &playSimGui))
             playSim_ = playSimGui;
+
+        ImGui::SeparatorText("Scene parameters");
+        
+        static ConstantForce* forceConstant = dynamic_cast<ConstantForce*>(force_);
+        if(forceConstant)
+        {
+            if(ImGui::CollapsingHeader("Constant force"))
+            {
+                static float vec[3] = {
+                    forceConstant->vec[0],
+                    forceConstant->vec[1],
+                    forceConstant->vec[2]
+                };
+
+                if(ImGui::DragFloat3("Vector", vec, DRAG_FLOAT_SPEED, -1, 1, "%.6f"))
+                    forceConstant->vec = Eigen::Vector3f(vec);
+            }
+        }
+
+        static std::shared_ptr<SphereCollConstr> sphereCollision = std::dynamic_pointer_cast<SphereCollConstr>(collisionCs_);
+        if(sphereCollision)
+        {
+            if(ImGui::CollapsingHeader("Sphere collision"))
+            {
+                ImGui::Checkbox("Active", &sphereCollision->active);
+                ImGui::DragFloat("Radius", &sphereCollision->radius, DRAG_FLOAT_SPEED);
+
+                static float origin[3] = {
+                    sphereCollision->centerPos[0],
+                    sphereCollision->centerPos[1],
+                    sphereCollision->centerPos[2]
+                };
+                if(ImGui::DragFloat3("Origin", origin, DRAG_FLOAT_SPEED))
+                    sphereCollision->centerPos = Eigen::Vector3f(origin);
+            }
+        }
+
+        if(ImGui::CollapsingHeader("Shearing limit"))
+        {
+            static float minRadians = shearLimitCs_->getLimit();
+
+            if(ImGui::DragFloat("Min radians", &minRadians, 0.05, 0, M_PI_2))
+                shearLimitCs_->setLimit(minRadians);
+        }
+
         ImGui::End();
     }
 
@@ -142,24 +195,6 @@ void SimulatorApp::drawGUI()
                 if (ImGui::MenuItem("Bottom-right", NULL, location == 3)) location = 3;
                 ImGui::EndPopup();
             }
-        }
-        ImGui::End();
-    }
-
-    {
-        ImGui::Begin("Force");
-        static ConstantForce* forceConstant = dynamic_cast<ConstantForce*>(force_);
-        if(forceConstant != NULL)
-        {
-            ImGui::SeparatorText("Constant force");
-
-            static float vec[3];
-            vec[0] = forceConstant->getVector()[0];
-            vec[1] = forceConstant->getVector()[1];
-            vec[2] = forceConstant->getVector()[2];
-
-            if(ImGui::DragFloat3("Vector", vec, 1e-6, -1, 1, "%.6f"))
-                forceConstant->setVector(Eigen::Vector3f(vec));
         }
         ImGui::End();
     }

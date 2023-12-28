@@ -108,9 +108,10 @@ int EdgeLengthConstraint::nConstraints(std::vector<Net*>& nets) const
 
 
 ShearLimitConstr::ShearLimitConstr(int netIdx, float edgeLength, float minRadians)
-    : netIdx_(netIdx)
+    : len_(edgeLength),
+      netIdx_(netIdx)
 {
-    setLimit(edgeLength, minRadians);
+    setLimit(minRadians);
 }
 
 float ShearLimitConstr::solve_(std::vector<Net*>& nets) const
@@ -145,23 +146,36 @@ int ShearLimitConstr::nConstraints(std::vector<Net*>& nets) const
     return nets[netIdx_]->getNDiagonals();
 }
 
-void ShearLimitConstr::setLimit(float edgeLength, float minRadians)
+float ShearLimitConstr::getLimit()
 {
+    return minRadians_;
+}
+
+void ShearLimitConstr::setLimit(float minRadians)
+{
+    minRadians_ = minRadians;
+    
     if(minRadians <= 0)
+    {
         squaredLen_ = 0;
+        minRadians_ = 0;
+    }
     else if(minRadians >= M_PI_2)
-        squaredLen_ = std::pow(edgeLength, 2) * M_SQRT2;
+    {
+        squaredLen_ = std::pow(len_, 2) * M_SQRT2;
+        minRadians_ = M_PI_2;
+    }
     else
     {
-        float twoSqEdgeLen = 2 * std::pow(edgeLength, 2);
+        float twoSqEdgeLen = 2 * std::pow(len_, 2);
         squaredLen_ = twoSqEdgeLen - twoSqEdgeLen * std::cos(minRadians);
     }
 }
 
 
 SphereCollConstr::SphereCollConstr(Eigen::Vector3f centerPos, float radius)
-    : centerPos_(centerPos),
-      radius_(radius)
+    : centerPos(centerPos),
+      radius(radius)
 {}
 
 float SphereCollConstr::solve_(std::vector<Net*>& nets) const
@@ -175,16 +189,16 @@ float SphereCollConstr::solve_(std::vector<Net*>& nets) const
 
         for(int i = 0; i < n->getNNodes(); i++)
         {            
-            currDist = (n->nodePos(i) - centerPos_).norm();
-            currDelta = radius_ - currDist; 
+            currDist = (n->nodePos(i) - centerPos).norm();
+            currDelta = radius - currDist; 
             if(currDelta > 0)
             {
                 meanDelta += std::pow(currDelta, 2);
                 
-                if((n->nodePos(i) - centerPos_).isZero())
-                    n->nodePos(i) += Eigen::Vector3f{0, radius_, 0};
+                if((n->nodePos(i) - centerPos).isZero())
+                    n->nodePos(i) += Eigen::Vector3f{0, radius, 0};
                 else
-                    n->nodePos(i) = (n->nodePos(i) - centerPos_) * (radius_ / currDist) + centerPos_;
+                    n->nodePos(i) = (n->nodePos(i) - centerPos) * (radius / currDist) + centerPos;
             }
         }
     }

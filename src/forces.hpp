@@ -19,11 +19,7 @@ public:
 
     virtual void applyForce(Eigen::Ref<Eigen::Vector3f> pos) const;
 
-    Eigen::Vector3f getVector();
-    void setVector(Eigen::Vector3f vec);
-
-private:
-    Eigen::Vector3f vec_;
+    Eigen::Vector3f vec;
     
 };
 
