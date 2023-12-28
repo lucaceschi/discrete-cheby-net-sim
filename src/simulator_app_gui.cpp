@@ -121,6 +121,7 @@ void SimulatorApp::drawGUI()
         }
 
         static std::shared_ptr<SphereCollConstr> sphereCollision = std::dynamic_pointer_cast<SphereCollConstr>(collisionCs_);
+        static std::shared_ptr<PlanarBoundaryConstr> planarCollision = std::dynamic_pointer_cast<PlanarBoundaryConstr>(collisionCs_);
         if(sphereCollision)
         {
             if(ImGui::CollapsingHeader("Sphere collision"))
@@ -135,6 +136,29 @@ void SimulatorApp::drawGUI()
                 };
                 if(ImGui::DragFloat3("Origin", origin, DRAG_FLOAT_SPEED))
                     sphereCollision->centerPos = Eigen::Vector3f(origin);
+            }
+        }
+        else if(planarCollision)
+        {
+            if(ImGui::CollapsingHeader("Planar boundary collision"))
+            {
+                ImGui::Checkbox("Active", &planarCollision->active);
+
+                static float point[3] = {
+                    planarCollision->pointOnBoundary[0],
+                    planarCollision->pointOnBoundary[1],
+                    planarCollision->pointOnBoundary[2]
+                };
+                if(ImGui::DragFloat3("Point", point, DRAG_FLOAT_SPEED))
+                    planarCollision->pointOnBoundary = Eigen::Vector3f(point);
+
+                static float normal[3] = {
+                    planarCollision->normalVec[0],
+                    planarCollision->normalVec[1],
+                    planarCollision->normalVec[2]
+                };
+                if(ImGui::DragFloat3("Normal", normal, DRAG_FLOAT_SPEED))
+                    planarCollision->normalVec = Eigen::Vector3f(normal);
             }
         }
 

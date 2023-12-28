@@ -60,6 +60,21 @@ private:
 };
 
 
+class PlanarBoundaryConstr : public ConstraintTask
+{
+public:
+    PlanarBoundaryConstr(Eigen::Vector3f pointOnBoundary, Eigen::Vector3f normalVec);
+
+    int nConstraints(std::vector<Net*>& nets) const;
+
+    Eigen::Vector3f pointOnBoundary;
+    Eigen::Vector3f normalVec;
+
+private:
+    float solve_(std::vector<Net*>& nets) const;
+};
+
+
 class SphereCollConstr : public ConstraintTask
 {
 public:

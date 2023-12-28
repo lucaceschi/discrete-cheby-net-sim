@@ -193,7 +193,25 @@ bool SimulatorApp::initApp()
                 collisionCs_ = std::make_shared<SphereCollConstr>(origin, radius);
                 solver_->addConstraint(collisionCs_);
             }
-            // TODO: else if...
+            else if(colliderType == "planar_boundary")
+            {
+                Eigen::Vector3f point;
+                TRY_PARSE("Parsing point of planar boundary collider",
+                    point = Eigen::Vector3f(colliderObj["point"][0].asFloat(),
+                                            colliderObj["point"][1].asFloat(),
+                                            colliderObj["point"][2].asFloat());
+                );
+
+                Eigen::Vector3f normal;
+                TRY_PARSE("Parsing normal of planar boundary collider",
+                    normal = Eigen::Vector3f(colliderObj["normal"][0].asFloat(),
+                                            colliderObj["normal"][1].asFloat(),
+                                            colliderObj["normal"][2].asFloat());
+                );
+
+                collisionCs_ = std::make_shared<PlanarBoundaryConstr>(point, normal);
+                solver_->addConstraint(collisionCs_);
+            }
             else
                 throw "invalid type of collider";
         }

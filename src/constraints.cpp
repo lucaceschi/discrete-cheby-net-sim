@@ -173,6 +173,45 @@ void ShearLimitConstr::setLimit(float minRadians)
 }
 
 
+PlanarBoundaryConstr::PlanarBoundaryConstr(Eigen::Vector3f pointOnBoundary, Eigen::Vector3f normalVec)
+    : pointOnBoundary(pointOnBoundary),
+      normalVec(normalVec)
+{}
+
+int PlanarBoundaryConstr::nConstraints(std::vector<Net*>& nets) const
+{
+    int n = 0;
+    for(const Net* net : nets)
+        n += net->getNNodes();
+
+    return n; 
+}
+
+float PlanarBoundaryConstr::solve_(std::vector<Net*>& nets) const
+{
+    float currDelta, meanDelta;
+
+    meanDelta = 0;
+    for(int netIdx = 0; netIdx < nets.size(); netIdx++)
+    {
+        Net* n = nets[netIdx];
+
+        for(int nodeIdx = 0; nodeIdx < n->getNNodes(); nodeIdx++)
+        {
+            currDelta = (pointOnBoundary - n->nodePos(nodeIdx)).dot(normalVec);
+            
+            if(currDelta > 0)
+            {
+                meanDelta += std::pow(currDelta, 2);
+                n->nodePos(nodeIdx) += (currDelta * normalVec);
+            }
+        }
+    }
+
+    return meanDelta;
+}
+
+
 SphereCollConstr::SphereCollConstr(Eigen::Vector3f centerPos, float radius)
     : centerPos(centerPos),
       radius(radius)
