@@ -113,6 +113,7 @@ set(SIM_SOURCES
     "${SOURCE_DIR}/forces.cpp"
     "${SOURCE_DIR}/constraints.cpp"
     "${SOURCE_DIR}/constraint_solver.cpp"
+    "${SOURCE_DIR}/sdfs.cpp"
     "${SOURCE_DIR}/framework/app.cpp"
     "${SOURCE_DIR}/framework/debug.cpp"
     "${SOURCE_DIR}/framework/input.cpp"

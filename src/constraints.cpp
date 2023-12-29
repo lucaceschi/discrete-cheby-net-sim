@@ -3,6 +3,9 @@
 #include <iostream>
 
 
+#define SDF_RAYCASTING_TOLERANCE 1e-6
+
+
 ConstraintTask::ConstraintTask()
     : active(true)
 {}
@@ -253,3 +256,68 @@ int SphereCollConstr::nConstraints(std::vector<Net*>& nets) const
 
     return n;
 }
+
+
+template <typename F, typename DF>
+SDFCollConstr<F, DF>::SDFCollConstr(F* sdf, DF* dsdf, bool exact)
+    : sdf_(sdf),
+      dsdf_(dsdf),
+      exact_(exact)
+{}
+
+template <typename F, typename DF>
+int SDFCollConstr<F, DF>::nConstraints(std::vector<Net*>& nets) const
+{
+    int n = 0;
+    for(const Net* net : nets)
+        n += net->getNNodes();
+
+    return n;
+}
+
+template <typename F, typename DF>
+float SDFCollConstr<F, DF>::solve_(std::vector<Net*>& nets) const
+{
+    float currDist, currDelta, meanDelta;
+
+    meanDelta = 0;
+    for(int netIdx = 0; netIdx < nets.size(); netIdx++)
+    {
+        Net* n = nets[netIdx];
+
+        for(int nodeIdx = 0; nodeIdx < n->getNNodes(); nodeIdx++)
+        {
+            currDelta = 0;
+            
+            if(exact_)
+            {
+                currDist = sdf_(n->nodePos(nodeIdx));
+                if(currDist < 0)
+                {
+                    n->nodePos(nodeIdx) -= (currDist * dsdf_(n->nodePos(nodeIdx)));
+                    currDelta = currDist;
+                }
+            }
+            else
+            {
+                while(true)
+                {
+                    currDist = sdf_(n->nodePos(nodeIdx));
+                    if(currDist < -SDF_RAYCASTING_TOLERANCE)
+                    {
+                        n->nodePos(nodeIdx) -= (currDist * dsdf_(n->nodePos(nodeIdx)));
+                        currDelta += currDist;
+                    }
+                    else
+                        break;
+                }
+            }
+
+            meanDelta += std::pow(currDelta, 2);
+        }
+    }
+
+    return meanDelta;
+}
+
+template class SDFCollConstr<float(Eigen::Vector3f), Eigen::Vector3f(Eigen::Vector3f)>;

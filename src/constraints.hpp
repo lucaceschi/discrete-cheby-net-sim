@@ -109,4 +109,21 @@ private:
 };
 
 
+template <typename F, typename DF>
+class SDFCollConstr : public ConstraintTask
+{
+public:
+    SDFCollConstr(F* sdf, DF* dsdf, bool exact);
+
+    int nConstraints(std::vector<Net*>& nets) const;
+
+private:
+    float solve_(std::vector<Net*>& nets) const;
+
+    F* sdf_;
+    DF* dsdf_;
+    bool exact_;
+};
+
+
 #endif

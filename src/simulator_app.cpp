@@ -1,5 +1,6 @@
 #include "simulator_app.hpp"
 #include "simulator_app_gui.hpp"
+#include "sdfs.hpp"
 #include "framework/debug.hpp"
 
 #include <iostream>
@@ -210,6 +211,24 @@ bool SimulatorApp::initApp()
                 );
 
                 collisionCs_ = std::make_shared<PlanarBoundaryConstr>(point, normal);
+                solver_->addConstraint(collisionCs_);
+            }
+            else if(colliderType == "sdf")
+            {
+                using SDFCollConstrF = SDFCollConstr<float(Eigen::Vector3f), Eigen::Vector3f(Eigen::Vector3f)>;
+
+                std::string preset;
+                TRY_PARSE("Parsing preset of sdf collider",
+                    preset = colliderObj["preset"].asString();
+                );
+
+                if(preset == "nut")
+                    collisionCs_ = std::make_shared<SDFCollConstrF>(SDFs::Nut::sdf, SDFs::Nut::dsdf, false);
+                else if(preset == "torus")
+                    collisionCs_ = std::make_shared<SDFCollConstrF>(SDFs::Torus::sdf, SDFs::Torus::dsdf, true);
+                else
+                    throw "Invalid preset for sdf collider";
+
                 solver_->addConstraint(collisionCs_);
             }
             else
