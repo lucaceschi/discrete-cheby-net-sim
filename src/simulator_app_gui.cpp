@@ -105,6 +105,7 @@ void SimulatorApp::drawGUI()
         ImGui::SeparatorText("Scene parameters");
         
         static ConstantForce* forceConstant = dynamic_cast<ConstantForce*>(force_);
+        static DiscreteSDFAttractionForce* attractionForce = dynamic_cast<DiscreteSDFAttractionForce*>(force_);
         if(forceConstant)
         {
             if(ImGui::CollapsingHeader("Constant force"))
@@ -117,6 +118,29 @@ void SimulatorApp::drawGUI()
 
                 if(ImGui::DragFloat3("Vector", vec, DRAG_FLOAT_SPEED, -1, 1, "%.6f"))
                     forceConstant->vec = Eigen::Vector3f(vec);
+            }
+        }
+        else if(attractionForce)
+        {
+            if(ImGui::CollapsingHeader("Attraction force"))
+            {
+                static float worldTranslationVec[3] = {
+                    attractionForce->getWorldTranslationVec()[0],
+                    attractionForce->getWorldTranslationVec()[1],
+                    attractionForce->getWorldTranslationVec()[2]
+                };
+
+                if(ImGui::DragFloat3("Vector", worldTranslationVec, DRAG_FLOAT_SPEED, -1, 1, "%.6f"))
+                    attractionForce->setWorldTranslationVec(Eigen::Vector3f(worldTranslationVec));
+
+                static float nearBound = attractionForce->getNearBound();
+                static float farBound = attractionForce->getFarBound();
+                if(ImGui::DragFloatRange2("Smoothstep bounds", &nearBound, &farBound, DRAG_FLOAT_SPEED,
+                                          attractionForce->getMinNearBound(), attractionForce->getMaxFarBound(), "%.6f"))
+                {
+                    attractionForce->setNearBound(nearBound);
+                    attractionForce->setFarBound(farBound);
+                }
             }
         }
 

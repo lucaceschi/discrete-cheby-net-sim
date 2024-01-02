@@ -161,7 +161,48 @@ bool SimulatorApp::initApp()
 
             force_ = new ConstantForce(translationVec);
         }
-        // TODO: else if...
+        else if(forceType == "discrete_sdf_attraction")
+        {
+            std::string vdbPath;
+            TRY_PARSE("Parsing vdb_path of discrete sdf attraction force",
+                vdbPath = forceObj["vdb_path"].asString();
+            );
+
+            float nearBound;
+            TRY_PARSE("Parsing smoothstep_near_bound of discrete sdf attraction force",
+                nearBound = forceObj["smoothstep_near_bound"].asFloat();
+            );
+
+            float farBound;
+            TRY_PARSE("Parsing smoothstep_far_bound of discrete sdf attraction force",
+                farBound = forceObj["smoothstep_far_bound"].asFloat();
+            );
+
+            Eigen::Vector3f worldTranslationVec;
+            TRY_PARSE("Parsing world_translation_vec of discrete sdf attraction force",
+                worldTranslationVec = Eigen::Vector3f(forceObj["world_translation_vec"][0].asFloat(),
+                                                      forceObj["world_translation_vec"][1].asFloat(),
+                                                      forceObj["world_translation_vec"][2].asFloat());
+            );
+            
+            openvdb::io::File vdbFile(vdbPath);
+            try
+            {
+                vdbFile.open(false);
+            }
+            catch(std::exception& e)
+            {
+                throw "An error occured while loading \"" + vdbPath + "\": " + std::string(e.what());
+            }
+            if(vdbFile.getGrids()->empty())
+            {
+                throw "An error occured while loading \"" + vdbPath + "\": no grids found";
+            }
+            openvdb::FloatGrid::Ptr sdfGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(vdbFile.getGrids()->front());
+            vdbFile.close();
+        
+            force_ = new DiscreteSDFAttractionForce(nets_, sdfGrid, nearBound, farBound, worldTranslationVec);
+        }
         else
             throw std::string("Invalid type of force");
 
