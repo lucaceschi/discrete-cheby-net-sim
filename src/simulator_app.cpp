@@ -124,16 +124,16 @@ void SimulatorApp::simulate() {
             #pragma omp parallel for schedule(static)
             for(int i = 0; i < totNodes_; i++)
             {
-                int net = 0;
+                int netIdx = 0;
                 int nodeIdx = i;
 
-                while(nodeIdx >= nets_[net]->getNNodes())
+                while(nodeIdx >= nets_[netIdx]->getNNodes())
                 {
-                    nodeIdx -= nets_[net]->getNNodes();
-                    net++;
+                    nodeIdx -= nets_[netIdx]->getNNodes();
+                    netIdx++;
                 }
 
-                force_->applyForce(nets_[net]->nodePos(nodeIdx));
+                force_->applyForce(nets_, netIdx, nodeIdx);
             }
         }
 

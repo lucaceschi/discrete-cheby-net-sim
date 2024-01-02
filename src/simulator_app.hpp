@@ -78,7 +78,7 @@ private:
     std::vector<Net*> nets_;
     int totNodes_;
 
-    Force* force_;
+    UnaryForce* force_;
     bool applyForce_;
     
     std::shared_ptr<FixedNodeConstraint> fixedCs_;

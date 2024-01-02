@@ -1,23 +1,26 @@
 #ifndef FORCES_HPP
 #define FORCES_HPP
 
+#include "net.hpp"
+
 #include <Eigen/Dense>
 
 
-class Force
+class UnaryForce
 {
 public:
-    virtual ~Force();
-    virtual void applyForce(Eigen::Ref<Eigen::Vector3f> pos) const = 0;
+    virtual ~UnaryForce();
+    virtual void applyForce(std::vector<Net*>& nets, int netIndex, int nodeIndex) const = 0;
 };
 
-class ConstantForce : public Force
+
+class ConstantForce : public UnaryForce
 {
 public:
     ConstantForce(Eigen::Vector3f vec);
-    ~ConstantForce();
+    virtual ~ConstantForce();
 
-    virtual void applyForce(Eigen::Ref<Eigen::Vector3f> pos) const;
+    virtual void applyForce(std::vector<Net*>& nets, int netIndex, int nodeIndex) const;
 
     Eigen::Vector3f vec;
     

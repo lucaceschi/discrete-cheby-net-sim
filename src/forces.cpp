@@ -1,7 +1,8 @@
 #include "forces.hpp"
 
 
-Force::~Force() {}
+UnaryForce::~UnaryForce() {}
+
 
 ConstantForce::ConstantForce(Eigen::Vector3f vec)
     : vec(vec)
@@ -9,7 +10,7 @@ ConstantForce::ConstantForce(Eigen::Vector3f vec)
 
 ConstantForce::~ConstantForce() {}
 
-void ConstantForce::applyForce(Eigen::Ref<Eigen::Vector3f> pos) const
+void ConstantForce::applyForce(std::vector<Net*>& nets, int netIndex, int nodeIndex) const
 {
-    pos += vec;
+    nets[netIndex]->nodePos(nodeIndex) += vec;
 }
