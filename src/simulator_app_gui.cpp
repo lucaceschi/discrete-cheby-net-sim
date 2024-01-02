@@ -6,7 +6,7 @@
 #define DRAG_FLOAT_SPEED 1e-3
 
 
-void initGUI()
+void SimulatorApp::initGUI()
 {
     ImGui::GetIO().Fonts->AddFontFromFileTTF("DroidSans.ttf", 14.0);
 

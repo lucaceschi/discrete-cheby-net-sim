@@ -8,6 +8,9 @@
 #include <map>
 
 #include <Eigen/Dense>
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/MeshToVolume.h>
+#include <openvdb/tools/GridOperators.h>
 
 
 class ConstraintTask
@@ -123,6 +126,31 @@ private:
     F* sdf_;
     DF* dsdf_;
     bool exact_;
+};
+
+
+class DiscreteSDFCollConstr : public ConstraintTask
+{
+using Vec3d = openvdb::math::Vec3d;
+using Coord = openvdb::Coord;
+using Transform = openvdb::math::Transform;
+using FloatGrid = openvdb::FloatGrid;
+using FloatGradient = openvdb::tools::Gradient<FloatGrid>;
+
+public:
+    DiscreteSDFCollConstr(std::vector<Net*>& nets, FloatGrid::Ptr sdfGrid);
+
+    int nConstraints(std::vector<Net*>& nets) const;
+
+private:
+    float solve_(std::vector<Net*>& nets) const;
+
+    Transform::Ptr transform_;
+    FloatGrid::Ptr sdfGrid_;
+    FloatGradient::OutGridType::Ptr gradGrid_;
+
+    std::vector<std::vector<FloatGrid::ConstAccessor>> sdfGridAccs_;
+    std::vector<std::vector<FloatGradient::OutGridType::ConstAccessor>> gradGridAccs_;
 };
 
 

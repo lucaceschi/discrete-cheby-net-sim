@@ -321,3 +321,65 @@ float SDFCollConstr<F, DF>::solve_(std::vector<Net*>& nets) const
 }
 
 template class SDFCollConstr<float(Eigen::Vector3f), Eigen::Vector3f(Eigen::Vector3f)>;
+
+
+DiscreteSDFCollConstr::DiscreteSDFCollConstr(std::vector<Net*>& nets, FloatGrid::Ptr sdfGrid)
+    : sdfGrid_(sdfGrid),
+      transform_(sdfGrid->transformPtr()),
+      sdfGridAccs_(nets.size()),
+      gradGridAccs_(nets.size())
+{   
+    // compute gradient grid
+    FloatGradient grad(*sdfGrid_);
+    gradGrid_ = grad.process();
+
+    // initialize grid accessors
+    for(int netIdx = 0; netIdx < nets.size(); netIdx++)
+    {
+        Net* n = nets[netIdx];
+
+        sdfGridAccs_[netIdx].reserve(n->getNNodes());
+        gradGridAccs_[netIdx].reserve(n->getNNodes());
+        for(int nodeIdx = 0; nodeIdx < n->getNNodes(); nodeIdx++)
+        {
+            sdfGridAccs_[netIdx].emplace_back(sdfGrid_->getConstAccessor());
+            gradGridAccs_[netIdx].emplace_back(gradGrid_->getConstAccessor());
+        }
+    }
+}
+
+int DiscreteSDFCollConstr::nConstraints(std::vector<Net*>& nets) const
+{
+    int n = 0;
+    for(const Net* net : nets)
+        n += net->getNNodes();
+
+    return n;
+}
+
+float DiscreteSDFCollConstr::solve_(std::vector<Net*>& nets) const
+{
+    float currDist, meanDelta;
+    Coord currNodeCoord;
+
+    meanDelta = 0;
+    for(int netIdx = 0; netIdx < nets.size(); netIdx++)
+    {
+        Net* n = nets[netIdx];
+
+        for(int nodeIdx = 0; nodeIdx < n->getNNodes(); nodeIdx++)
+        {
+            currNodeCoord = transform_->worldToIndexCellCentered(Vec3d(n->nodePos(nodeIdx).data()));
+            currDist = sdfGridAccs_[netIdx][nodeIdx].getValue(currNodeCoord);
+
+            if(currDist < 0)
+            {
+                Eigen::Vector3f grad = Eigen::Vector3f(gradGridAccs_[netIdx][nodeIdx].getValue(currNodeCoord).asPointer());
+                n->nodePos(nodeIdx) -= (currDist * grad);
+                meanDelta += std::pow(currDist, 2);
+            }
+        }
+    }
+
+    return meanDelta;
+}

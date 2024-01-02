@@ -109,6 +109,7 @@ set(SIM_SOURCES
     "${SOURCE_DIR}/simulator_app.cpp"
     "${SOURCE_DIR}/simulator_app_events.cpp"
     "${SOURCE_DIR}/simulator_app_gui.cpp"
+    "${SOURCE_DIR}/simulator_app_init.cpp"
     "${SOURCE_DIR}/net.cpp"
     "${SOURCE_DIR}/forces.cpp"
     "${SOURCE_DIR}/constraints.cpp"

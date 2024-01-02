@@ -48,6 +48,7 @@ public:
 
 private:
     virtual bool initApp();
+    void initGUI();
     virtual bool mainLoop(double delta);
     virtual void quitApp();
 

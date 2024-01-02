@@ -3,6 +3,7 @@
 #include <string>
 
 #include <json/json.h>
+#include <openvdb.h>
 
 #include "simulator_app.hpp"
 
@@ -68,6 +69,8 @@ int main(int argc, char* argv[])
             }
         }
     }
+
+    openvdb::initialize();
     
     SimulatorApp simApp(sceneName, sceneRoot);
     simApp.run();
