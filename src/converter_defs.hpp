@@ -1,0 +1,10 @@
+#ifndef CONVERTER_DEFS_HPP
+#define CONVERTER_DEFS_HPP
+
+
+#define VDB_VOXEL_SIZE_METADATA_NAME "voxelSizeWorld"
+#define VDB_EXTERIOR_BANDWIDTH_METADATA_NAME "extBandWidthWorld"
+#define VDB_INTERIOR_BANDWIDTH_METADATA_NAME "intBandWidthWorld"
+
+
+#endif

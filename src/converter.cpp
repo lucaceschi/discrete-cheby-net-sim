@@ -8,6 +8,8 @@
 #include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/tools/GridOperators.h>
 
+#include "converter_defs.hpp"
+
 
 class Vertex;
 class Face;
@@ -124,8 +126,9 @@ int main(int argc, char* argv[])
     {
         std::cout << "Exporting VDB..." << std::endl;
         
-        sdfGrid->insertMeta("extBandWidthWorld", openvdb::FloatMetadata(extBandWidth));
-        sdfGrid->insertMeta("intBandWidthWorld", openvdb::FloatMetadata(intBandWidth));
+        sdfGrid->insertMeta(VDB_VOXEL_SIZE_METADATA_NAME, openvdb::FloatMetadata(voxelSize));
+        sdfGrid->insertMeta(VDB_EXTERIOR_BANDWIDTH_METADATA_NAME, openvdb::FloatMetadata(extBandWidth));
+        sdfGrid->insertMeta(VDB_INTERIOR_BANDWIDTH_METADATA_NAME, openvdb::FloatMetadata(intBandWidth));
         
         openvdb::io::File vdbFile(outPath);
         vdbFile.write({sdfGrid});
