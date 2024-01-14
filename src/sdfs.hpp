@@ -12,7 +12,7 @@ namespace SDFs
         Eigen::Vector3f dsdf(Eigen::Vector3f pos);
     }
     
-    namespace Nut
+    namespace Peanut
     {
         float sdf(Eigen::Vector3f pos);
         Eigen::Vector3f dsdf(Eigen::Vector3f pos);

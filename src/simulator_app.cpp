@@ -106,7 +106,7 @@ void SimulatorApp::drawNetsRenderMode()
 }
 
 void SimulatorApp::simulate() {
-    const std::chrono::duration TIME_STEP = std::chrono::nanoseconds(1000000000) / solverFpsCap_;
+    const std::chrono::duration TIME_STEP = std::chrono::nanoseconds(1000000000) / solverSpsCap_;
 
     while(!byebye_) {
 
@@ -119,7 +119,7 @@ void SimulatorApp::simulate() {
         auto startTime = std::chrono::high_resolution_clock::now();
         auto minEndTime = startTime + TIME_STEP;
 
-        if(applyForce_)
+        if(force_ != nullptr)
         {
             #pragma omp parallel for schedule(static)
             for(int i = 0; i < totNodes_; i++)

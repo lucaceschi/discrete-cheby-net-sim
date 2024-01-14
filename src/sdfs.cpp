@@ -30,20 +30,20 @@ Eigen::Vector3f SDFs::Torus::dsdf(Eigen::Vector3f pos)
 }
 
 
-#define SDF_NUT_RADIUS 0.5
+#define SDF_PEANUT_RADIUS 0.5
 
-float SDFs::Nut::sdf(Eigen::Vector3f pos)
+float SDFs::Peanut::sdf(Eigen::Vector3f pos)
 {      
     float smooth = 0.1;
     
-    float sph1 = (pos - Eigen::Vector3f{-0.4, 0, 0}).norm() - SDF_NUT_RADIUS;
-    float sph2 = (pos - Eigen::Vector3f{+0.4, 0, 0}).norm() - SDF_NUT_RADIUS;
+    float sph1 = (pos - Eigen::Vector3f{-0.4, 0, 0}).norm() - SDF_PEANUT_RADIUS;
+    float sph2 = (pos - Eigen::Vector3f{+0.4, 0, 0}).norm() - SDF_PEANUT_RADIUS;
 
     float h = std::max(smooth - std::abs(sph1 - sph2), 0.0f);
     return std::min(sph1, sph2) - (0.25 * h * h / smooth);
 }
 
-Eigen::Vector3f SDFs::Nut::dsdf(Eigen::Vector3f pos)
+Eigen::Vector3f SDFs::Peanut::dsdf(Eigen::Vector3f pos)
 {
     float smooth = 0.1;
     

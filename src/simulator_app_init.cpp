@@ -16,6 +16,45 @@
         catch(const Json::LogicError& e) { throw (std::string(errstr) + ": " + std::string(e.what())); } \
     } while(0)
 
+#define JSON_KEY_SIM_PARAMS             std::string("simulator_params")
+#define JSON_KEY_SIM_PARAMS_MAX_SPS     std::string("max_steps_per_second")
+#define JSON_KEY_SIM_PARAMS_ABS_TOL     std::string("absolute_tolerance")
+#define JSON_KEY_SIM_PARAMS_REL_TOL     std::string("relative_tolerance")
+#define JSON_KEY_SIM_PARAMS_MAX_IPS     std::string("max_iters_per_step")
+
+#define JSON_KEY_NETS_LIST          std::string("nets")
+#define JSON_KEY_NET_SIZE           std::string("size")
+#define JSON_KEY_NET_CENTER         std::string("center")
+#define JSON_KEY_NET_X_TAN_VEC      std::string("x_tangent_vector")
+#define JSON_KEY_NET_Y_TAN_VEC      std::string("y_tangent_vector")
+#define JSON_KEY_NET_EDGE_LEN       std::string("edge_length")
+#define JSON_KEY_NET_SHEAR_LIM      std::string("shear_angle_limit")
+#define JSON_KEY_COLOR              std::string("color")
+
+#define JSON_KEY_COLLIDER                       std::string("collider")
+#define JSON_VAL_COLLIDER_PLANE_TYPE            std::string("planar_boundary")
+#define JSON_KEY_COLLIDER_PLANE_POINT           std::string("point")
+#define JSON_KEY_COLLIDER_PLANE_NORMAL          std::string("normal")
+#define JSON_VAL_COLLIDER_SPHERE_TYPE           std::string("sphere")
+#define JSON_KEY_COLLIDER_SPHERE_ORIGIN         std::string("origin")
+#define JSON_KEY_COLLIDER_SPHERE_RADIUS         std::string("radius")
+#define JSON_VAL_COLLIDER_SDF_TYPE              std::string("sdf")
+#define JSON_KEY_COLLIDER_SDF_PRESET            std::string("preset")
+#define JSON_VAL_COLLIDER_SDF_PRESET_TORUS      std::string("torus")
+#define JSON_VAL_COLLIDER_SDF_PRESET_PEANUT     std::string("peanut")
+#define JSON_VAL_COLLIDER_DISCRETE_SDF_TPYE     std::string("discrete_sdf")
+#define JSON_KEY_COLLIDER_SDF_VDB_PATH          std::string("vdb_path")
+
+#define JSON_KEY_FORCE                                      std::string("force")
+#define JSON_KEY_FORCE_TYPE                                 std::string("type")
+#define JSON_VAL_FORCE_CONSTANT_TYPE                        std::string("constant")
+#define JSON_KEY_FORCE_CONSTANT_TRANSLATION_VEC             std::string("translation_vector")
+#define JSON_VAL_FORCE_ATTRACTION_TYPE                      std::string("discrete_sdf_attraction")
+#define JSON_KEY_FORCE_ATTARCTION_VDB_PATH                  std::string("vdb_path")
+#define JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_NEAR_BOUND     std::string("smoothstep_near_bound")
+#define JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_FAR_BOUND      std::string("smoothstep_far_bound")
+#define JSON_KEY_FORCE_ATTRACTION_WORKD_TRANSLATIION_VEC    std::string("world_translation_vec")
+
 
 const Eigen::Vector2i SimulatorApp::WINDOW_SIZE = {1200, 800};
 const bool SimulatorApp::WINDOW_RESIZABLE = true;
@@ -30,7 +69,6 @@ SimulatorApp::SimulatorApp(std::string sceneName, Json::Value sceneConfig)
       nets_(),
       totNodes_(0),
       force_(nullptr),
-      applyForce_(true),
       solver_(nullptr),
       playSim_(false),
       simThread_(),
@@ -44,34 +82,34 @@ bool SimulatorApp::initApp()
     {
         // initialize constraint solver
 
-        Json::Value& solverObj = sceneConfig_["constraint_solver"];
-        if(solverObj.isNull() || !solverObj.isObject())
-            throw std::string("No configuration for constraint_solver found");
+        Json::Value& simParamObj = sceneConfig_[JSON_KEY_SIM_PARAMS];
+        if(simParamObj.isNull() || !simParamObj.isObject())
+            throw std::string("No configuration for" + JSON_KEY_SIM_PARAMS + "found");
 
         float absTol;
-        TRY_PARSE("Parsing absolute_tolerance of constraint solver",
-            absTol = solverObj["absolute_tolerance"].asFloat();
+        TRY_PARSE("Parsing " + JSON_KEY_SIM_PARAMS_ABS_TOL + " of constraint solver",
+            absTol = simParamObj[JSON_KEY_SIM_PARAMS_ABS_TOL].asFloat();
         );
 
         float relTol;
-        TRY_PARSE("Parsing relative_tolerance of constraint solver",
-            relTol = solverObj["relative_tolerance"].asFloat();
+        TRY_PARSE("Parsing " + JSON_KEY_SIM_PARAMS_REL_TOL + " of constraint solver",
+            relTol = simParamObj[JSON_KEY_SIM_PARAMS_REL_TOL].asFloat();
         );
 
         int maxIters;
-        TRY_PARSE("Parsing max_iters of constraint solver",
-            maxIters = solverObj["max_iters"].asInt();
+        TRY_PARSE("Parsing " + JSON_KEY_SIM_PARAMS_MAX_IPS + " of constraint solver",
+            maxIters = simParamObj[JSON_KEY_SIM_PARAMS_MAX_IPS].asInt();
         );
 
-        TRY_PARSE("Parsing max_fps of constraint solver",
-            solverFpsCap_ = solverObj["max_fps"].asInt();
+        TRY_PARSE("Parsing " + JSON_KEY_SIM_PARAMS_MAX_SPS + " of constraint solver",
+            solverSpsCap_ = simParamObj[JSON_KEY_SIM_PARAMS_MAX_SPS].asInt();
         );
 
         solver_ = new ConstraintSolver(nets_, absTol, relTol, maxIters);
         
         // initialize nets
         
-        Json::Value& netsArray = sceneConfig_["nets"];
+        Json::Value& netsArray = sceneConfig_[JSON_KEY_NETS_LIST];
         if(netsArray.isNull() || !netsArray.isArray() || netsArray.size() == 0)
             throw std::string("No nets specified");
 
@@ -81,47 +119,47 @@ bool SimulatorApp::initApp()
         for(int n = 0; n < nNets; n++)
         {
             Eigen::Vector2i size;
-            TRY_PARSE("Parsing size of net " + std::to_string(n), 
-                size = Eigen::Vector2i(netsArray[n]["size"][0].asInt(),
-                                       netsArray[n]["size"][1].asInt());
+            TRY_PARSE("Parsing " + JSON_KEY_NET_SIZE + " of net " + std::to_string(n), 
+                size = Eigen::Vector2i(netsArray[n][JSON_KEY_NET_SIZE][0].asInt(),
+                                       netsArray[n][JSON_KEY_NET_SIZE][1].asInt());
             );
 
             Eigen::Vector3f center;
-            TRY_PARSE("Parsing center of net " + std::to_string(n),
-                center = Eigen::Vector3f(netsArray[n]["center"][0].asFloat(),
-                                         netsArray[n]["center"][1].asFloat(),
-                                         netsArray[n]["center"][2].asFloat());
+            TRY_PARSE("Parsing " + JSON_KEY_NET_CENTER + " of net " + std::to_string(n),
+                center = Eigen::Vector3f(netsArray[n][JSON_KEY_NET_CENTER][0].asFloat(),
+                                         netsArray[n][JSON_KEY_NET_CENTER][1].asFloat(),
+                                         netsArray[n][JSON_KEY_NET_CENTER][2].asFloat());
             );
 
             Eigen::Vector3f xTangVec;
-            TRY_PARSE("Parsing x_tangent_vector of net " + std::to_string(n),
-                xTangVec = Eigen::Vector3f(netsArray[n]["x_tangent_vector"][0].asFloat(),
-                                           netsArray[n]["x_tangent_vector"][1].asFloat(),
-                                           netsArray[n]["x_tangent_vector"][2].asFloat());
+            TRY_PARSE("Parsing " + JSON_KEY_NET_X_TAN_VEC + " of net " + std::to_string(n),
+                xTangVec = Eigen::Vector3f(netsArray[n][JSON_KEY_NET_X_TAN_VEC][0].asFloat(),
+                                           netsArray[n][JSON_KEY_NET_X_TAN_VEC][1].asFloat(),
+                                           netsArray[n][JSON_KEY_NET_X_TAN_VEC][2].asFloat());
             );
 
             Eigen::Vector3f yTangVec;
-            TRY_PARSE("Parsing y_tangent_vector of net " + std::to_string(n),
-                yTangVec = Eigen::Vector3f(netsArray[n]["y_tangent_vector"][0].asFloat(),
-                                           netsArray[n]["y_tangent_vector"][1].asFloat(),
-                                           netsArray[n]["y_tangent_vector"][2].asFloat());
+            TRY_PARSE("Parsing " + JSON_KEY_NET_Y_TAN_VEC + " of net " + std::to_string(n),
+                yTangVec = Eigen::Vector3f(netsArray[n][JSON_KEY_NET_Y_TAN_VEC][0].asFloat(),
+                                           netsArray[n][JSON_KEY_NET_Y_TAN_VEC][1].asFloat(),
+                                           netsArray[n][JSON_KEY_NET_Y_TAN_VEC][2].asFloat());
             );
 
             float edgeLength;
-            TRY_PARSE("Parsing edge_length of net " + std::to_string(n),
-                edgeLength = netsArray[n]["edge_length"].asFloat();
+            TRY_PARSE("Parsing " + JSON_KEY_NET_EDGE_LEN + " of net " + std::to_string(n),
+                edgeLength = netsArray[n][JSON_KEY_NET_EDGE_LEN].asFloat();
             );
 
             float shearLimit;
-            TRY_PARSE("Parsing shear_angle_limit of net " + std::to_string(n),
-                shearLimit = netsArray[n]["shear_angle_limit"].asFloat();
+            TRY_PARSE("Parsing " + JSON_KEY_NET_SHEAR_LIM + " of net " + std::to_string(n),
+                shearLimit = netsArray[n][JSON_KEY_NET_SHEAR_LIM].asFloat();
             );
 
             GLubyte color[3];
-            TRY_PARSE("Parsing color of net " + std::to_string(n),
+            TRY_PARSE("Parsing " + JSON_KEY_COLOR + " of net " + std::to_string(n),
                 for(int i = 0; i < 3; i++)
                 {
-                    unsigned int c = netsArray[n]["color"][i].asUInt();
+                    unsigned int c = netsArray[n][JSON_KEY_COLOR][i].asUInt();
                     color[i] = (GLubyte)((c < 255)? c : 255);
                 }
             );
@@ -141,140 +179,140 @@ bool SimulatorApp::initApp()
 
         // initialize force        
 
-        Json::Value& forceObj = sceneConfig_["force"];
-        if(forceObj.isNull() || !forceObj.isObject())
-            throw std::string("No force specified");
-        
-        std::string forceType;
-        TRY_PARSE("Parsing type of force",
-            forceType = forceObj["type"].asString();
-        );
-
-        if(forceType == "constant")
+        Json::Value& forceObj = sceneConfig_[JSON_KEY_FORCE];
+        if(!forceObj.isNull() && forceObj.isObject())
         {
-            Eigen::Vector3f translationVec;
-            TRY_PARSE("Parsing translation_vector of constant force",
-                translationVec = Eigen::Vector3f(forceObj["translation_vector"][0].asFloat(),
-                                                 forceObj["translation_vector"][1].asFloat(),
-                                                 forceObj["translation_vector"][2].asFloat());
+            std::string forceType;
+            TRY_PARSE("Parsing " + JSON_KEY_FORCE_TYPE + " of force",
+                forceType = forceObj[JSON_KEY_FORCE_TYPE].asString();
             );
 
-            force_ = new ConstantForce(translationVec);
-        }
-        else if(forceType == "discrete_sdf_attraction")
-        {
-            std::string vdbPath;
-            TRY_PARSE("Parsing vdb_path of discrete sdf attraction force",
-                vdbPath = forceObj["vdb_path"].asString();
-            );
+            if(forceType == JSON_VAL_FORCE_CONSTANT_TYPE)
+            {
+                Eigen::Vector3f translationVec;
+                TRY_PARSE("Parsing " + JSON_KEY_FORCE_CONSTANT_TRANSLATION_VEC + " of " + JSON_VAL_FORCE_CONSTANT_TYPE + " force",
+                    translationVec = Eigen::Vector3f(forceObj[JSON_KEY_FORCE_CONSTANT_TRANSLATION_VEC][0].asFloat(),
+                                                    forceObj[JSON_KEY_FORCE_CONSTANT_TRANSLATION_VEC][1].asFloat(),
+                                                    forceObj[JSON_KEY_FORCE_CONSTANT_TRANSLATION_VEC][2].asFloat());
+                );
 
-            float nearBound;
-            TRY_PARSE("Parsing smoothstep_near_bound of discrete sdf attraction force",
-                nearBound = forceObj["smoothstep_near_bound"].asFloat();
-            );
+                force_ = new ConstantForce(translationVec);
+            }
+            else if(forceType == JSON_VAL_FORCE_ATTRACTION_TYPE)
+            {
+                std::string vdbPath;
+                TRY_PARSE("Parsing " + JSON_KEY_FORCE_ATTARCTION_VDB_PATH + " of " + JSON_VAL_FORCE_ATTRACTION_TYPE + " force",
+                    vdbPath = forceObj["vdb_path"].asString();
+                );
 
-            float farBound;
-            TRY_PARSE("Parsing smoothstep_far_bound of discrete sdf attraction force",
-                farBound = forceObj["smoothstep_far_bound"].asFloat();
-            );
+                float nearBound;
+                TRY_PARSE("Parsing " + JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_NEAR_BOUND + " of " + JSON_VAL_FORCE_ATTRACTION_TYPE + " force",
+                    nearBound = forceObj[JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_NEAR_BOUND].asFloat();
+                );
 
-            Eigen::Vector3f worldTranslationVec;
-            TRY_PARSE("Parsing world_translation_vec of discrete sdf attraction force",
-                worldTranslationVec = Eigen::Vector3f(forceObj["world_translation_vec"][0].asFloat(),
-                                                      forceObj["world_translation_vec"][1].asFloat(),
-                                                      forceObj["world_translation_vec"][2].asFloat());
-            );
+                float farBound;
+                TRY_PARSE("Parsing " + JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_FAR_BOUND + " of " + JSON_VAL_FORCE_ATTRACTION_TYPE + " force",
+                    farBound = forceObj[JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_FAR_BOUND].asFloat();
+                );
+
+                Eigen::Vector3f worldTranslationVec;
+                TRY_PARSE("Parsing " + JSON_KEY_FORCE_ATTRACTION_WORKD_TRANSLATIION_VEC + " of " + JSON_VAL_FORCE_ATTRACTION_TYPE + " force",
+                    worldTranslationVec = Eigen::Vector3f(forceObj[JSON_KEY_FORCE_ATTRACTION_WORKD_TRANSLATIION_VEC][0].asFloat(),
+                                                        forceObj[JSON_KEY_FORCE_ATTRACTION_WORKD_TRANSLATIION_VEC][1].asFloat(),
+                                                        forceObj[JSON_KEY_FORCE_ATTRACTION_WORKD_TRANSLATIION_VEC][2].asFloat());
+                );
+                
+                openvdb::io::File vdbFile(vdbPath);
+                try
+                {
+                    vdbFile.open(false);
+                }
+                catch(std::exception& e)
+                {
+                    throw "An error occured while loading \"" + vdbPath + "\": " + std::string(e.what());
+                }
+                if(vdbFile.getGrids()->empty())
+                {
+                    throw "An error occured while loading \"" + vdbPath + "\": no grids found";
+                }
+                openvdb::FloatGrid::Ptr sdfGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(vdbFile.getGrids()->front());
+                vdbFile.close();
             
-            openvdb::io::File vdbFile(vdbPath);
-            try
-            {
-                vdbFile.open(false);
+                force_ = new DiscreteSDFAttractionForce(nets_, sdfGrid, nearBound, farBound, worldTranslationVec);
             }
-            catch(std::exception& e)
-            {
-                throw "An error occured while loading \"" + vdbPath + "\": " + std::string(e.what());
-            }
-            if(vdbFile.getGrids()->empty())
-            {
-                throw "An error occured while loading \"" + vdbPath + "\": no grids found";
-            }
-            openvdb::FloatGrid::Ptr sdfGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(vdbFile.getGrids()->front());
-            vdbFile.close();
-        
-            force_ = new DiscreteSDFAttractionForce(nets_, sdfGrid, nearBound, farBound, worldTranslationVec);
+            else
+                throw std::string("Invalid type of force");
         }
-        else
-            throw std::string("Invalid type of force");
 
         // initialize collider
 
-        Json::Value& colliderObj = sceneConfig_["collider"];
+        Json::Value& colliderObj = sceneConfig_[JSON_KEY_COLLIDER];
         if(!colliderObj.isNull() && colliderObj.isObject())
         {
             std::string colliderType;
-            TRY_PARSE("Parsing type of force",
-                colliderType = colliderObj["type"].asString();
+            TRY_PARSE("Parsing " + JSON_KEY_FORCE_TYPE + " of collider",
+                colliderType = colliderObj[JSON_KEY_FORCE_TYPE].asString();
             );
 
-            if(colliderType == "sphere")
+            if(colliderType == JSON_VAL_COLLIDER_SPHERE_TYPE)
             {
                 Eigen::Vector3f origin;
-                TRY_PARSE("Parsing origin of sphere collider",
-                    origin = Eigen::Vector3f(colliderObj["origin"][0].asFloat(),
-                                            colliderObj["origin"][1].asFloat(),
-                                            colliderObj["origin"][2].asFloat());
+                TRY_PARSE("Parsing " + JSON_KEY_COLLIDER_SPHERE_ORIGIN + " of " + JSON_VAL_COLLIDER_SPHERE_TYPE + " collider",
+                    origin = Eigen::Vector3f(colliderObj[JSON_KEY_COLLIDER_SPHERE_ORIGIN][0].asFloat(),
+                                             colliderObj[JSON_KEY_COLLIDER_SPHERE_ORIGIN][1].asFloat(),
+                                             colliderObj[JSON_KEY_COLLIDER_SPHERE_ORIGIN][2].asFloat());
                 );
 
                 float radius;
-                TRY_PARSE("Parsing radius of sphere collider",
-                    radius = colliderObj["radius"].asFloat();
+                TRY_PARSE("Parsing " + JSON_KEY_COLLIDER_SPHERE_RADIUS + " of " + JSON_VAL_COLLIDER_SPHERE_TYPE + " collider",
+                    radius = colliderObj[JSON_KEY_COLLIDER_SPHERE_RADIUS].asFloat();
                 );
 
                 collisionCs_ = std::make_shared<SphereCollConstr>(origin, radius);
                 solver_->addConstraint(collisionCs_);
             }
-            else if(colliderType == "planar_boundary")
+            else if(colliderType == JSON_VAL_COLLIDER_PLANE_TYPE)
             {
                 Eigen::Vector3f point;
-                TRY_PARSE("Parsing point of planar boundary collider",
-                    point = Eigen::Vector3f(colliderObj["point"][0].asFloat(),
-                                            colliderObj["point"][1].asFloat(),
-                                            colliderObj["point"][2].asFloat());
+                TRY_PARSE("Parsing " + JSON_KEY_COLLIDER_PLANE_POINT + " of " + JSON_VAL_COLLIDER_PLANE_TYPE + " collider",
+                    point = Eigen::Vector3f(colliderObj[JSON_KEY_COLLIDER_PLANE_POINT][0].asFloat(),
+                                            colliderObj[JSON_KEY_COLLIDER_PLANE_POINT][1].asFloat(),
+                                            colliderObj[JSON_KEY_COLLIDER_PLANE_POINT][2].asFloat());
                 );
 
                 Eigen::Vector3f normal;
-                TRY_PARSE("Parsing normal of planar boundary collider",
-                    normal = Eigen::Vector3f(colliderObj["normal"][0].asFloat(),
-                                            colliderObj["normal"][1].asFloat(),
-                                            colliderObj["normal"][2].asFloat());
+                TRY_PARSE("Parsing " + JSON_KEY_COLLIDER_PLANE_NORMAL + " of " + JSON_VAL_COLLIDER_PLANE_TYPE + " collider",
+                    normal = Eigen::Vector3f(colliderObj[JSON_KEY_COLLIDER_PLANE_NORMAL][0].asFloat(),
+                                             colliderObj[JSON_KEY_COLLIDER_PLANE_NORMAL][1].asFloat(),
+                                             colliderObj[JSON_KEY_COLLIDER_PLANE_NORMAL][2].asFloat());
                 );
 
                 collisionCs_ = std::make_shared<PlanarBoundaryConstr>(point, normal);
                 solver_->addConstraint(collisionCs_);
             }
-            else if(colliderType == "sdf")
+            else if(colliderType == JSON_VAL_COLLIDER_SDF_TYPE)
             {
                 using SDFCollConstrF = SDFCollConstr<float(Eigen::Vector3f), Eigen::Vector3f(Eigen::Vector3f)>;
 
                 std::string preset;
-                TRY_PARSE("Parsing preset of sdf collider",
-                    preset = colliderObj["preset"].asString();
+                TRY_PARSE("Parsing " + JSON_KEY_COLLIDER_SDF_PRESET + " of " + JSON_VAL_COLLIDER_SDF_TYPE + " collider",
+                    preset = colliderObj[JSON_KEY_COLLIDER_SDF_PRESET].asString();
                 );
 
-                if(preset == "nut")
-                    collisionCs_ = std::make_shared<SDFCollConstrF>(SDFs::Nut::sdf, SDFs::Nut::dsdf, false);
-                else if(preset == "torus")
+                if(preset == JSON_VAL_COLLIDER_SDF_PRESET_PEANUT)
+                    collisionCs_ = std::make_shared<SDFCollConstrF>(SDFs::Peanut::sdf, SDFs::Peanut::dsdf, false);
+                else if(preset == JSON_VAL_COLLIDER_SDF_PRESET_TORUS)
                     collisionCs_ = std::make_shared<SDFCollConstrF>(SDFs::Torus::sdf, SDFs::Torus::dsdf, true);
                 else
-                    throw std::string("Invalid preset for sdf collider");
+                    throw std::string("Invalid " + JSON_KEY_COLLIDER_SDF_PRESET + " for " + JSON_VAL_COLLIDER_SDF_TYPE + " collider");
 
                 solver_->addConstraint(collisionCs_);
             }
-            else if(colliderType == "discrete_sdf")
+            else if(colliderType == JSON_VAL_COLLIDER_DISCRETE_SDF_TPYE)
             {
                 std::string vdbPath;
-                TRY_PARSE("Parsing vdb_path of sdf collider",
-                    vdbPath = colliderObj["vdb_path"].asString();
+                TRY_PARSE("Parsing " + JSON_KEY_COLLIDER_SDF_VDB_PATH + " of " + JSON_VAL_COLLIDER_DISCRETE_SDF_TPYE + " collider",
+                    vdbPath = colliderObj[JSON_KEY_COLLIDER_SDF_VDB_PATH].asString();
                 );
 
                 openvdb::io::File vdbFile(vdbPath);
