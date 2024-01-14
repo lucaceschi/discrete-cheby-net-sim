@@ -37,8 +37,8 @@ Net::Net(Eigen::Vector2i size,
             edges.col(e++) = Eigen::Array2i{n, n+size[1]};
     }
 
-    for(int row = 0; row < size[0] - 1; row++)
-        for(int col = 0; col < size[1] - 1; col++)
+    for(int row = 0; row < size[1] - 1; row++)
+        for(int col = 0; col < size[0] - 1; col++)
         {
             int quadIdx = (row * (size[0] - 1)) + col;
             int nodeIdx = (row * size[0]) + col;
