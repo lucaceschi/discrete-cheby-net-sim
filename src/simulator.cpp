@@ -3,7 +3,7 @@
 #include <string>
 
 #include <json/json.h>
-#include <openvdb.h>
+#include <openvdb/openvdb.h>
 
 #include "simulator_app.hpp"
 
