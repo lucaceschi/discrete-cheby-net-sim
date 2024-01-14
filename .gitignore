@@ -3,5 +3,4 @@
 .vscode
 build
 debug
-external/
 data/
