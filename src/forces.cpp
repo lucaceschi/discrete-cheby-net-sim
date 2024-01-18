@@ -105,13 +105,17 @@ void DiscreteSDFAttractionForce::setNearBound(float smoothstepNearBound)
     nearBound_ = smoothstepNearBound;
     if(nearBound_ < minNearBound_)
         nearBound_ = minNearBound_;
+    else if(nearBound_ > maxFarBound_)
+        nearBound_ = maxFarBound_;
 }
 
 void DiscreteSDFAttractionForce::setFarBound(float smoothstepFarBound)
 {
     farBound_ = smoothstepFarBound;
     if(farBound_ > maxFarBound_)
-        farBound_ = maxFarBound_;  
+        farBound_ = maxFarBound_;
+    else if(farBound_ < minNearBound_)
+        farBound_ = minNearBound_;
 }
 
 Eigen::Vector3f DiscreteSDFAttractionForce::getWorldTranslationVec() const
