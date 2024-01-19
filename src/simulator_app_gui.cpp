@@ -105,7 +105,7 @@ void SimulatorApp::drawGUI()
         ImGui::SeparatorText("Scene parameters");
         
         static ConstantForce* forceConstant = dynamic_cast<ConstantForce*>(force_);
-        static DiscreteSDFAttractionForce* attractionForce = dynamic_cast<DiscreteSDFAttractionForce*>(force_);
+        static DiscreteSDFFittingForce* fittingForce = dynamic_cast<DiscreteSDFFittingForce*>(force_);
         if(forceConstant)
         {
             if(ImGui::CollapsingHeader("Constant force"))
@@ -120,26 +120,26 @@ void SimulatorApp::drawGUI()
                     forceConstant->vec = Eigen::Vector3f(vec);
             }
         }
-        else if(attractionForce)
+        else if(fittingForce)
         {
-            if(ImGui::CollapsingHeader("Attraction force"))
+            if(ImGui::CollapsingHeader("Fitting force"))
             {
                 static float worldTranslationVec[3] = {
-                    attractionForce->getWorldTranslationVec()[0],
-                    attractionForce->getWorldTranslationVec()[1],
-                    attractionForce->getWorldTranslationVec()[2]
+                    fittingForce->getWorldTranslationVec()[0],
+                    fittingForce->getWorldTranslationVec()[1],
+                    fittingForce->getWorldTranslationVec()[2]
                 };
 
                 if(ImGui::DragFloat3("Vector", worldTranslationVec, DRAG_FLOAT_SPEED, -1, 1, "%.6f"))
-                    attractionForce->setWorldTranslationVec(Eigen::Vector3f(worldTranslationVec));
+                    fittingForce->setWorldTranslationVec(Eigen::Vector3f(worldTranslationVec));
 
-                static float nearBound = attractionForce->getNearBound();
-                static float farBound = attractionForce->getFarBound();
+                static float nearBound = fittingForce->getNearBound();
+                static float farBound = fittingForce->getFarBound();
                 if(ImGui::DragFloatRange2("Smoothstep bounds", &nearBound, &farBound, DRAG_FLOAT_SPEED,
-                                          attractionForce->getMinNearBound(), attractionForce->getMaxFarBound(), "%.6f"))
+                                          0, fittingForce->getMaxFarBound(), "%.6f"))
                 {
-                    attractionForce->setNearBound(nearBound);
-                    attractionForce->setFarBound(farBound);
+                    fittingForce->setNearBound(nearBound);
+                    fittingForce->setFarBound(farBound);
                 }
             }
         }

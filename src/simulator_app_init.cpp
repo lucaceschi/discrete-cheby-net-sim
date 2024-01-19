@@ -45,15 +45,15 @@
 #define JSON_VAL_COLLIDER_DISCRETE_SDF_TPYE     std::string("discrete_sdf")
 #define JSON_KEY_COLLIDER_SDF_VDB_PATH          std::string("vdb_path")
 
-#define JSON_KEY_FORCE                                      std::string("force")
-#define JSON_KEY_FORCE_TYPE                                 std::string("type")
-#define JSON_VAL_FORCE_CONSTANT_TYPE                        std::string("constant")
-#define JSON_KEY_FORCE_CONSTANT_TRANSLATION_VEC             std::string("translation_vector")
-#define JSON_VAL_FORCE_ATTRACTION_TYPE                      std::string("discrete_sdf_attraction")
-#define JSON_KEY_FORCE_ATTARCTION_VDB_PATH                  std::string("vdb_path")
-#define JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_NEAR_BOUND     std::string("smoothstep_near_bound")
-#define JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_FAR_BOUND      std::string("smoothstep_far_bound")
-#define JSON_KEY_FORCE_ATTRACTION_WORKD_TRANSLATIION_VEC    std::string("world_translation_vec")
+#define JSON_KEY_FORCE                                   std::string("force")
+#define JSON_KEY_FORCE_TYPE                              std::string("type")
+#define JSON_VAL_FORCE_CONSTANT_TYPE                     std::string("constant")
+#define JSON_KEY_FORCE_CONSTANT_TRANSLATION_VEC          std::string("translation_vector")
+#define JSON_VAL_FORCE_FITTING_TYPE                      std::string("discrete_sdf_fitting")
+#define JSON_KEY_FORCE_ATTARCTION_VDB_PATH               std::string("vdb_path")
+#define JSON_KEY_FORCE_FITTING_SMOOTHSTEP_NEAR_BOUND     std::string("smoothstep_near_bound")
+#define JSON_KEY_FORCE_FITTING_SMOOTHSTEP_FAR_BOUND      std::string("smoothstep_far_bound")
+#define JSON_KEY_FORCE_FITTING_WORKD_TRANSLATIION_VEC    std::string("world_translation_vec")
 
 
 const Eigen::Vector2i SimulatorApp::WINDOW_SIZE = {1200, 800};
@@ -198,28 +198,28 @@ bool SimulatorApp::initApp()
 
                 force_ = new ConstantForce(translationVec);
             }
-            else if(forceType == JSON_VAL_FORCE_ATTRACTION_TYPE)
+            else if(forceType == JSON_VAL_FORCE_FITTING_TYPE)
             {
                 std::string vdbPath;
-                TRY_PARSE("Parsing " + JSON_KEY_FORCE_ATTARCTION_VDB_PATH + " of " + JSON_VAL_FORCE_ATTRACTION_TYPE + " force",
+                TRY_PARSE("Parsing " + JSON_KEY_FORCE_ATTARCTION_VDB_PATH + " of " + JSON_VAL_FORCE_FITTING_TYPE + " force",
                     vdbPath = forceObj["vdb_path"].asString();
                 );
 
                 float nearBound;
-                TRY_PARSE("Parsing " + JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_NEAR_BOUND + " of " + JSON_VAL_FORCE_ATTRACTION_TYPE + " force",
-                    nearBound = forceObj[JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_NEAR_BOUND].asFloat();
+                TRY_PARSE("Parsing " + JSON_KEY_FORCE_FITTING_SMOOTHSTEP_NEAR_BOUND + " of " + JSON_VAL_FORCE_FITTING_TYPE + " force",
+                    nearBound = forceObj[JSON_KEY_FORCE_FITTING_SMOOTHSTEP_NEAR_BOUND].asFloat();
                 );
 
                 float farBound;
-                TRY_PARSE("Parsing " + JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_FAR_BOUND + " of " + JSON_VAL_FORCE_ATTRACTION_TYPE + " force",
-                    farBound = forceObj[JSON_KEY_FORCE_ATTRACTION_SMOOTHSTEP_FAR_BOUND].asFloat();
+                TRY_PARSE("Parsing " + JSON_KEY_FORCE_FITTING_SMOOTHSTEP_FAR_BOUND + " of " + JSON_VAL_FORCE_FITTING_TYPE + " force",
+                    farBound = forceObj[JSON_KEY_FORCE_FITTING_SMOOTHSTEP_FAR_BOUND].asFloat();
                 );
 
                 Eigen::Vector3f worldTranslationVec;
-                TRY_PARSE("Parsing " + JSON_KEY_FORCE_ATTRACTION_WORKD_TRANSLATIION_VEC + " of " + JSON_VAL_FORCE_ATTRACTION_TYPE + " force",
-                    worldTranslationVec = Eigen::Vector3f(forceObj[JSON_KEY_FORCE_ATTRACTION_WORKD_TRANSLATIION_VEC][0].asFloat(),
-                                                        forceObj[JSON_KEY_FORCE_ATTRACTION_WORKD_TRANSLATIION_VEC][1].asFloat(),
-                                                        forceObj[JSON_KEY_FORCE_ATTRACTION_WORKD_TRANSLATIION_VEC][2].asFloat());
+                TRY_PARSE("Parsing " + JSON_KEY_FORCE_FITTING_WORKD_TRANSLATIION_VEC + " of " + JSON_VAL_FORCE_FITTING_TYPE + " force",
+                    worldTranslationVec = Eigen::Vector3f(forceObj[JSON_KEY_FORCE_FITTING_WORKD_TRANSLATIION_VEC][0].asFloat(),
+                                                        forceObj[JSON_KEY_FORCE_FITTING_WORKD_TRANSLATIION_VEC][1].asFloat(),
+                                                        forceObj[JSON_KEY_FORCE_FITTING_WORKD_TRANSLATIION_VEC][2].asFloat());
                 );
                 
                 openvdb::io::File vdbFile(vdbPath);
@@ -238,7 +238,7 @@ bool SimulatorApp::initApp()
                 openvdb::FloatGrid::Ptr sdfGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(vdbFile.getGrids()->front());
                 vdbFile.close();
             
-                force_ = new DiscreteSDFAttractionForce(nets_, sdfGrid, nearBound, farBound, worldTranslationVec);
+                force_ = new DiscreteSDFFittingForce(nets_, sdfGrid, nearBound, farBound, worldTranslationVec);
             }
             else
                 throw std::string("Invalid type of force");

@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/GridOperators.h>
+#include <openvdb/tools/Interpolation.h>
 
 
 class UnaryForce
@@ -29,25 +30,27 @@ public:
 };
 
 
-class DiscreteSDFAttractionForce : public UnaryForce
+class DiscreteSDFFittingForce : public UnaryForce
 {
 using Vec3d = openvdb::math::Vec3d;
 using Coord = openvdb::Coord;
 using Transform = openvdb::math::Transform;
 using FloatGrid = openvdb::FloatGrid;
 using FloatGradient = openvdb::tools::Gradient<FloatGrid>;
+using BoxSampler = openvdb::tools::BoxSampler;
+using FloatGridSampler = openvdb::tools::GridSampler<FloatGrid::ConstAccessor, BoxSampler>;
+using FloatGradientGridSampler = openvdb::tools::GridSampler<FloatGradient::OutGridType::ConstAccessor, BoxSampler>;
 
 public:
-    DiscreteSDFAttractionForce(std::vector<Net*>& nets,
+    DiscreteSDFFittingForce(std::vector<Net*>& nets,
                                FloatGrid::Ptr sdfGrid,
                                float smoothstepNearBound,
                                float smoothstepFarBound,
                                Eigen::Vector3f worldTranslationVec);
-    virtual ~DiscreteSDFAttractionForce();
+    virtual ~DiscreteSDFFittingForce();
 
     virtual void applyForce(std::vector<Net*>& nets, int netIndex, int nodeIndex) const;
 
-    float getMinNearBound() const;
     float getMaxFarBound() const;
     float getNearBound() const;
     float getFarBound() const;
@@ -71,14 +74,15 @@ private:
     float nearBound_;
     float farBound_;
 
-    float minNearBound_;
     float maxFarBound_;
 
     Eigen::Vector3f worldTranslationVec_;
     float worldTranslationVecNorm_;
 
     std::vector<std::vector<FloatGrid::ConstAccessor>> sdfGridAccs_;
+    std::vector<std::vector<FloatGridSampler>> sdfGridSamplers_;
     std::vector<std::vector<FloatGradient::OutGridType::ConstAccessor>> gradGridAccs_;
+    std::vector<std::vector<FloatGradientGridSampler>> gradGridSamplers_;
 };
 
 
