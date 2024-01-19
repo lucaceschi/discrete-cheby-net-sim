@@ -32,7 +32,7 @@ public:
 
 class DiscreteSDFFittingForce : public UnaryForce
 {
-using Vec3d = openvdb::math::Vec3d;
+using Vec3f = openvdb::math::Vec3<float>;
 using Coord = openvdb::Coord;
 using Transform = openvdb::math::Transform;
 using FloatGrid = openvdb::FloatGrid;

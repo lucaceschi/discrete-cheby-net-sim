@@ -66,7 +66,7 @@ DiscreteSDFFittingForce::~DiscreteSDFFittingForce() {}
 
 void DiscreteSDFFittingForce::applyForce(std::vector<Net*>& nets, int netIndex, int nodeIndex) const
 {
-    Vec3d worldPos = Vec3d(nets[netIndex]->nodePos(nodeIndex).data());
+    Vec3f worldPos = Vec3f(nets[netIndex]->nodePos(nodeIndex).data());
     float distFromSurface = sdfGridSamplers_[netIndex][nodeIndex].wsSample(worldPos);
 
     Eigen::Vector3f attractionVec = Eigen::Vector3f::Zero();

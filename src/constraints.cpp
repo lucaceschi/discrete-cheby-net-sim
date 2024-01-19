@@ -327,7 +327,9 @@ DiscreteSDFCollConstr::DiscreteSDFCollConstr(std::vector<Net*>& nets, FloatGrid:
     : sdfGrid_(sdfGrid),
       transform_(sdfGrid->transformPtr()),
       sdfGridAccs_(nets.size()),
-      gradGridAccs_(nets.size())
+      gradGridAccs_(nets.size()),
+      sdfGridSamplers_(nets.size()),
+      gradGridSamplers_(nets.size())
 {   
     // compute gradient grid
     FloatGradient grad(*sdfGrid_);
@@ -344,6 +346,8 @@ DiscreteSDFCollConstr::DiscreteSDFCollConstr(std::vector<Net*>& nets, FloatGrid:
         {
             sdfGridAccs_[netIdx].emplace_back(sdfGrid_->getConstAccessor());
             gradGridAccs_[netIdx].emplace_back(gradGrid_->getConstAccessor());
+            sdfGridSamplers_[netIdx].emplace_back(sdfGridAccs_[netIdx].back(), sdfGrid_->transform());
+            gradGridSamplers_[netIdx].emplace_back(gradGridAccs_[netIdx].back(), sdfGrid_->transform());
         }
     }
 }
@@ -360,7 +364,7 @@ int DiscreteSDFCollConstr::nConstraints(std::vector<Net*>& nets) const
 float DiscreteSDFCollConstr::solve_(std::vector<Net*>& nets) const
 {
     float currDist, meanDelta;
-    Coord currNodeCoord;
+    Vec3f currNodeWorldPos;
 
     meanDelta = 0;
     for(int netIdx = 0; netIdx < nets.size(); netIdx++)
@@ -369,12 +373,12 @@ float DiscreteSDFCollConstr::solve_(std::vector<Net*>& nets) const
 
         for(int nodeIdx = 0; nodeIdx < n->getNNodes(); nodeIdx++)
         {
-            currNodeCoord = transform_->worldToIndexCellCentered(Vec3d(n->nodePos(nodeIdx).data()));
-            currDist = sdfGridAccs_[netIdx][nodeIdx].getValue(currNodeCoord);
+            currNodeWorldPos = Vec3f(n->nodePos(nodeIdx).data());
+            currDist = sdfGridSamplers_[netIdx][nodeIdx].wsSample(currNodeWorldPos);
 
             if(currDist < 0)
             {
-                Eigen::Vector3f grad = Eigen::Vector3f(gradGridAccs_[netIdx][nodeIdx].getValue(currNodeCoord).asPointer());
+                Eigen::Vector3f grad = Eigen::Vector3f(gradGridSamplers_[netIdx][nodeIdx].wsSample(currNodeWorldPos).asPointer());
                 n->nodePos(nodeIdx) -= (currDist * grad);
                 meanDelta += std::pow(currDist, 2);
             }

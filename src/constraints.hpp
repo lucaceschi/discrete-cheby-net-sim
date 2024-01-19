@@ -11,6 +11,7 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/tools/GridOperators.h>
+#include <openvdb/tools/Interpolation.h>
 
 
 class ConstraintTask
@@ -131,11 +132,14 @@ private:
 
 class DiscreteSDFCollConstr : public ConstraintTask
 {
-using Vec3d = openvdb::math::Vec3d;
+using Vec3f = openvdb::math::Vec3<float>;
 using Coord = openvdb::Coord;
 using Transform = openvdb::math::Transform;
 using FloatGrid = openvdb::FloatGrid;
 using FloatGradient = openvdb::tools::Gradient<FloatGrid>;
+using BoxSampler = openvdb::tools::BoxSampler;
+using FloatGridSampler = openvdb::tools::GridSampler<FloatGrid::ConstAccessor, BoxSampler>;
+using FloatGradientGridSampler = openvdb::tools::GridSampler<FloatGradient::OutGridType::ConstAccessor, BoxSampler>;
 
 public:
     DiscreteSDFCollConstr(std::vector<Net*>& nets, FloatGrid::Ptr sdfGrid);
@@ -150,7 +154,9 @@ private:
     FloatGradient::OutGridType::Ptr gradGrid_;
 
     std::vector<std::vector<FloatGrid::ConstAccessor>> sdfGridAccs_;
+    std::vector<std::vector<FloatGridSampler>> sdfGridSamplers_;
     std::vector<std::vector<FloatGradient::OutGridType::ConstAccessor>> gradGridAccs_;
+    std::vector<std::vector<FloatGradientGridSampler>> gradGridSamplers_;
 };
 
 
