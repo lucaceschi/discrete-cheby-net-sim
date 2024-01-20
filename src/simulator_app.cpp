@@ -87,7 +87,7 @@ void SimulatorApp::drawNetsRenderMode()
 
         // Draw nodes
 
-        glPointSize(10.0f * trackball_.track.sca);
+        glPointSize(5.0f * trackball_.track.sca);
 
         glBegin(GL_POINTS);
         for(int nodeIdx = 0; nodeIdx < net.getNNodes(); nodeIdx++)
@@ -142,6 +142,11 @@ void SimulatorApp::simulate() {
             frmwrk::Debug::logWarning("Constraint solver reached max iters, stopping");
             playSim_ = false;
         }
+
+        nItersHist_[histNextIndex_]    = solver_->getNIters();
+        meanDeltaHist_[histNextIndex_] = solver_->getMeanDelta();
+        histNextIndex_ = (histNextIndex_ + 1) % HISTORY_LENGTH;
+        
 
         while(std::chrono::high_resolution_clock::now() < minEndTime)
             std::this_thread::yield();

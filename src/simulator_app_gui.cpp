@@ -8,22 +8,10 @@
 
 void SimulatorApp::initGUI()
 {
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("DroidSans.ttf", 14.0);
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("../external/imgui/misc/fonts/DroidSans.ttf", 14.0);
 
     ImGuiStyle& style = ImGui::GetStyle();
     ImGui::StyleColorsLight(&style);
-    style.Colors[ImGuiCol_Text] = ImVec4(0.31f, 0.25f, 0.24f, 1.00f);
-    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
-    style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.40f, 0.65f, 0.80f, 0.20f);
-    style.Colors[ImGuiCol_Border] = ImVec4(0.68f, 0.68f, 0.68f, 0.60f);
-    style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    style.Colors[ImGuiCol_TitleBg] = ImVec4(0.40f, 0.65f, 0.80f, 0.20f);
-    style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.40f, 0.65f, 0.80f, 0.20f);
-    style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.42f, 0.75f, 1.00f, 0.53f);
-    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.40f, 0.62f, 0.80f, 0.15f);
-    style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.39f, 0.64f, 0.80f, 0.30f);
-    style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.28f, 0.67f, 0.80f, 0.59f);
-    style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.25f, 0.48f, 0.53f, 0.67f);
     style.Colors[ImGuiCol_FrameBg] = ImVec4(0.62f, 0.70f, 0.72f, 0.56f);
     style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.95f, 0.33f, 0.14f, 0.47f);
     style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.97f, 0.31f, 0.13f, 0.81f);
@@ -33,9 +21,7 @@ void SimulatorApp::initGUI()
 }
 
 void SimulatorApp::drawGUI()
-{
-    ImGui::ShowDemoWindow();
-    
+{   
     {
         if(ImGui::BeginMainMenuBar())
         {           
@@ -95,14 +81,13 @@ void SimulatorApp::drawGUI()
     {
         ImGui::Begin("Simulation");
         
-        ImGui::SeparatorText("Controls");
+        ImGui::SeparatorText("Constraint solver params");
 
-        static bool playSimGui;
-        playSimGui = playSim_;
-        if(ImGui::Checkbox("Play sim", &playSimGui))
-            playSim_ = playSimGui;
+        ImGui::DragFloat("Abs tol", &solver_->absoluteTol, 1e-2, 0.1, 1e-18, "%.2e");
+        ImGui::DragFloat("Rel tol", &solver_->relativeTol, 1e-2, 0.1, 1e-18, "%.2e");
+        ImGui::DragInt("Max iters", &solver_->maxIters, 5, 1, INT_MAX);
 
-        ImGui::SeparatorText("Scene parameters");
+        ImGui::SeparatorText("Scene params");
         
         static ConstantForce* forceConstant = dynamic_cast<ConstantForce*>(force_);
         static DiscreteSDFFittingForce* fittingForce = dynamic_cast<DiscreteSDFFittingForce*>(force_);
@@ -225,13 +210,19 @@ void SimulatorApp::drawGUI()
         }
         ImGui::SetNextWindowBgAlpha(0.35f);
         if (ImGui::Begin("##Stats_overlay", nullptr, window_flags))
-        {
-            ImGui::Text("Number of iterations: %i", solver_->getNIters());
-            ImGui::Text("Final mean delta: %f", solver_->getMeanDelta());
-            ImGui::Text("Simple overlay\n" "(right-click to change position)");
-            ImGui::Separator();
-            static float arr[] = { 0.6f, 0.1f, 1.0f, 0.5f, 0.92f, 0.1f, 0.2f };
-            //ImGui::PlotLines("##totDisplacements", solver_.getTotDisplacements(), solver_.getNIters());
+        {    
+            static bool playSimGui;
+            playSimGui = playSim_;
+            if(ImGui::Checkbox("Play sim", &playSimGui))
+                playSim_ = playSimGui;
+            
+            ImGui::SeparatorText("Constraint solver stats");
+            ImGui::PlotLines("##nItersPlot", nItersHist_.data(),
+                             HISTORY_LENGTH, histNextIndex_,
+                             "N iters", 0, FLT_MAX, {200, 30});
+            ImGui::PlotLines("##meanDeltaPlot", meanDeltaHist_.data(),
+                             HISTORY_LENGTH, histNextIndex_,
+                             "Mean delta", 0, FLT_MAX, {200, 30});
 
             if (ImGui::BeginPopupContextWindow())
             {

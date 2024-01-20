@@ -26,6 +26,7 @@ private:
     static const bool WINDOW_RESIZABLE;
     static const GLclampf RENDER_BG_COLOR[3];
     static const GLclampf PICKING_BG_COLOR[3];
+    static constexpr int HISTORY_LENGTH = 1000;
 
     enum class CameraProjection { PERSP, ORTHO };
     enum class CameraViewpoint { TOP, FRONT, RIGHT };
@@ -88,6 +89,9 @@ private:
     int solverSpsCap_;
 
     std::atomic<bool> playSim_;
+    std::array<float, HISTORY_LENGTH> nItersHist_;
+    std::array<float, HISTORY_LENGTH> meanDeltaHist_;
+    int histNextIndex_;
     std::thread simThread_;
     bool byebye_;
 

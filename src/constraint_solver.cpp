@@ -9,9 +9,9 @@
 ConstraintSolver::ConstraintSolver(std::vector<Net*>& nets,
                                    float absoluteTolerance, float relativeTolerance, int maxIterations)
     : nets_(nets),
-      absTol_(absoluteTolerance),
-      relTol_(relativeTolerance),
-      maxIters_(maxIterations),
+      absoluteTol(absoluteTolerance),
+      relativeTol(relativeTolerance),
+      maxIters(maxIterations),
       tasks_(),
       nIters_(0)
 {}
@@ -48,12 +48,12 @@ ConstraintSolver::ReturnCode ConstraintSolver::solve()
 
         meanDelta /= totConstraints;
 
-        if(nIters >= maxIters_)
+        if(nIters >= maxIters)
         {
             stop = true;
             returnCode = ReturnCode::REACHED_MAX_ITERS;
         }
-        else if(meanDelta <= absTol_ + firstMeanDelta * relTol_)
+        else if(meanDelta <= absoluteTol + firstMeanDelta * relativeTol)
         {
             stop = true;
             returnCode = ReturnCode::CONVERGENCE;

@@ -71,6 +71,9 @@ SimulatorApp::SimulatorApp(std::string sceneName, Json::Value sceneConfig)
       force_(nullptr),
       solver_(nullptr),
       playSim_(false),
+      nItersHist_(),
+      meanDeltaHist_(),
+      histNextIndex_(0),
       simThread_(),
       byebye_(false),
       pick_()

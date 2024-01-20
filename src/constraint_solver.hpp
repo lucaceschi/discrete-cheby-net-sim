@@ -26,11 +26,12 @@ public:
     const int getNIters();
     const float getMeanDelta();
 
+    float absoluteTol;
+    float relativeTol;
+    int maxIters;
+
 private:
     std::vector<Net*>& nets_;
-
-    float absTol_, relTol_;
-    int maxIters_;
 
     std::vector<std::shared_ptr<ConstraintTask>> tasks_;
 
