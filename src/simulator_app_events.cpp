@@ -75,19 +75,22 @@ void SimulatorApp::handleMouseEvents()
             glReadPixels(curPos(0), curPos(1), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &pickedDepth);
             pickedNodeIdx = color2node(pickedColor[0], pickedColor[1], pickedColor[2]);
 
-            if(pickedNodeIdx != -1 && input_.isMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT))
+            if(pickedDepth != 1 && pickedNodeIdx < nets_[netIdx]->getNNodes())
             {
-                if(!fixedCs_->isNodeFixed(netIdx, pickedNodeIdx))
+                if(input_.isMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT))
+                {
+                    if(!fixedCs_->isNodeFixed(netIdx, pickedNodeIdx))
+                        fixedCs_->fixNode(nets_, netIdx, pickedNodeIdx);
+                    else
+                        fixedCs_->freeNode(netIdx, pickedNodeIdx);
+                    break;
+                }
+                else if(input_.isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT))
+                {
+                    pick_ = Pick(netIdx, pickedNodeIdx, pickedDepth);
                     fixedCs_->fixNode(nets_, netIdx, pickedNodeIdx);
-                else
-                    fixedCs_->freeNode(netIdx, pickedNodeIdx);
-                break;
-            }
-            else if(pickedNodeIdx != -1 && input_.isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT))
-            {
-                pick_ = Pick(netIdx, pickedNodeIdx, pickedDepth);
-                fixedCs_->fixNode(nets_, netIdx, pickedNodeIdx);
-                break;
+                    break;
+                }
             }
         }
 

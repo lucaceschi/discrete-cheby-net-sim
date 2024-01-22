@@ -100,7 +100,7 @@ bool App::init()
         return false;
     }
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_MULTISAMPLE);
+    //glEnable(GL_MULTISAMPLE);
     glEnable(GL_PROGRAM_POINT_SIZE);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
