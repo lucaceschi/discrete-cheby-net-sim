@@ -1,9 +1,16 @@
 #include "simulator_app.hpp"
 
+#include <vector>
+#include <string>
+
 #include <imgui.h>
 
 
 #define DRAG_FLOAT_SPEED 1e-3
+
+
+static int shearConstraintCurrentNet;
+static std::vector<float> minRadians;
 
 
 void SimulatorApp::initGUI()
@@ -18,6 +25,14 @@ void SimulatorApp::initGUI()
     style.WindowRounding = 4;
     style.FrameRounding = 1;
     style.FrameBorderSize = 1;
+
+    shearConstraintCurrentNet = 0;
+
+    minRadians.reserve(nets_.size());
+    for(int netIdx = 0; netIdx < nets_.size(); netIdx++)
+    {
+        minRadians.push_back(shearLimitCs_[netIdx]->getLimit());
+    }
 }
 
 void SimulatorApp::drawGUI()
@@ -173,10 +188,11 @@ void SimulatorApp::drawGUI()
 
         if(ImGui::CollapsingHeader("Shearing limit"))
         {
-            static float minRadians = shearLimitCs_->getLimit();
-
-            if(ImGui::DragFloat("Min radians", &minRadians, 0.05, 0, M_PI_2))
-                shearLimitCs_->setLimit(minRadians);
+            if(nets_.size() > 1)
+                ImGui::DragInt("Net", &shearConstraintCurrentNet, 1, 0, nets_.size() - 1);
+            
+            if(ImGui::DragFloat("Min radians", &minRadians[shearConstraintCurrentNet], 0.05, 0, M_PI_2))
+                shearLimitCs_[shearConstraintCurrentNet]->setLimit(minRadians[shearConstraintCurrentNet]);
         }
 
         ImGui::End();

@@ -119,6 +119,7 @@ bool SimulatorApp::initApp()
         int nNets = netsArray.size();
         nets_.reserve(nNets);
         edgeLenCs_.reserve(nNets);
+        shearLimitCs_.reserve(nNets);
         for(int n = 0; n < nNets; n++)
         {
             Eigen::Vector2i size;
@@ -173,8 +174,8 @@ bool SimulatorApp::initApp()
             edgeLenCs_.push_back(std::make_shared<EdgeLengthConstraint>(nets_, n));
             solver_->addConstraint(edgeLenCs_.back());
 
-            shearLimitCs_ = std::make_shared<ShearLimitConstr>(n, edgeLength, shearLimit);
-            solver_->addConstraint(shearLimitCs_);
+            shearLimitCs_.push_back(std::make_shared<ShearLimitConstr>(n, edgeLength, shearLimit));
+            solver_->addConstraint(shearLimitCs_.back());
         }
 
         fixedCs_ = std::make_shared<FixedNodeConstraint>(nets_);
