@@ -46,7 +46,8 @@ ConstraintSolver::ReturnCode ConstraintSolver::solve()
             totConstraints += tsk->nConstraints(nets_);
         }
 
-        meanDelta /= totConstraints;
+        if(totConstraints > 0)
+            meanDelta /= totConstraints;
 
         if(nIters >= maxIters)
         {
