@@ -12,6 +12,9 @@
 static int shearConstraintCurrentNet;
 static std::vector<float> minRadians;
 
+const float SimulatorApp::INIT_CONTACT_CONSTRAINT_MAX_EE_DISTANCE_REL= 0.01;
+const float SimulatorApp::INIT_CONTACT_CONSTRAINT_MIN_CN_DISTANCE_REL= 0.1;
+const float SimulatorApp::INIT_CONTACT_CONSTRAINT_MIN_CC_DISTANCE_REL= 0.1;
 
 void SimulatorApp::initGUI()
 {
@@ -41,7 +44,8 @@ void SimulatorApp::drawGUI()
         if(ImGui::BeginMainMenuBar())
         {           
             ImGuiID exportPopupId = ImGui::GetID("##export_nets");
-            if(ImGui::BeginPopup("##export_nets")) {
+            if(ImGui::BeginPopup("##export_nets"))
+            {
                 ImGui::SeparatorText("Export nets");
                 static char filename[64] = "";
                 bool pressedEnter = ImGui::InputTextWithHint("##export_input_text", "base file name", filename, 64, ImGuiInputTextFlags_EnterReturnsTrue);
@@ -62,10 +66,34 @@ void SimulatorApp::drawGUI()
                 ImGui::EndMenu();
             }
 
+            ImGuiID contactPopupId = ImGui::GetID("##add_contacts");
+            if(ImGui::BeginPopup("##add_contacts"))
+            {                
+                ImGui::SeparatorText("Add contact constraint");
+                ImGui::DragFloat("Max edge-edge distance", &maxEEDistRel_, DRAG_FLOAT_SPEED, 0, 1, "%.3e");
+                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort | ImGuiHoveredFlags_NoSharedDelay))
+                    ImGui::SetTooltip("The maximum distance wrt edge length between two edges for a contact to be created");
+                ImGui::DragFloat("Min contact-node distance", &minCCDistRel_, DRAG_FLOAT_SPEED, 0, 1, "%.3e");
+                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort | ImGuiHoveredFlags_NoSharedDelay))
+                    ImGui::SetTooltip("The minimum distance wrt edge length to the closest node for the contact to be created");
+                ImGui::DragFloat("Min contact-contact distance", &minCCDistRel_, DRAG_FLOAT_SPEED, 0, 1, "%.3e");
+                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort | ImGuiHoveredFlags_NoSharedDelay))
+                    ImGui::SetTooltip("The minimum distance wrt edge length to the closest existing contact for the contact to be created");
+
+                if(ImGui::Button("Add contact constraints"))
+                {
+                    addAllContactConstraints();
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+
             if(ImGui::BeginMenu("Nets"))
             {
                 if(ImGui::MenuItem("Cut and fix nets"))
                     cutNets();
+                if(ImGui::MenuItem("Add contact constraints"))
+                    ImGui::OpenPopup(contactPopupId);
                 ImGui::EndMenu();
             }
 

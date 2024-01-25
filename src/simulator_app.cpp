@@ -102,6 +102,21 @@ void SimulatorApp::drawNetsRenderMode()
             glVertex3d(nodePos(0), nodePos(1), nodePos(2));
         }
         glEnd();
+
+        // Draw contact points
+
+        glColor3ub(0xff, 0x80, 0x00);
+
+        glBegin(GL_POINTS);
+        for(const ContactConstraint::Contact& c : contactCs_->getContacts())
+        {
+            Eigen::Vector3f contactPointA, contactPointB;
+            std::tie(contactPointA, contactPointB) = c.getContactPoints(nets_);
+
+            glVertex3d(contactPointA(0), contactPointA(1), contactPointA(2));
+            glVertex3d(contactPointB(0), contactPointB(1), contactPointB(2));
+        }
+        glEnd();
     }
 }
 
@@ -161,7 +176,7 @@ void SimulatorApp::cutNets()
     std::vector< std::vector<Eigen::Vector3f> > newNodes        (nets_.size());
     std::vector< std::unordered_map<int, int> > nodeIndexMap    (nets_.size());
     std::vector< std::vector<Eigen::Array2i>  > newEdges        (nets_.size());
-    //std::vector< std::unordered_map<int, int> > edgeIndexMaps   (nets_.size());
+    std::vector< std::unordered_map<int, int> > edgeIndexMaps   (nets_.size());
     std::vector< std::vector<float>           > newEdgeLengths  (nets_.size());
     std::vector< std::vector<Net::Quad>       > newQuads        (nets_.size());
     std::vector< std::vector<Eigen::Array2i>  > newDiagonals    (nets_.size());
@@ -254,11 +269,12 @@ void SimulatorApp::cutNets()
                 newNodePos -= (deltaLength * edgeVec);
                 edgeLength = net->edgeLengths[edgeIdx] - abs(deltaLength);
                 newNodes[netIdx].push_back(newNodePos);
-                newFixedNodes[netIdx].push_back(newNodes[netIdx].size());
+                newFixedNodes[netIdx].push_back(newNodes[netIdx].size() - 1);
             }
 
             newEdges[netIdx].emplace_back(p1Index, p2Index);
             newEdgeLengths[netIdx].push_back(edgeLength);
+            edgeIndexMaps[netIdx][edgeIdx] = newEdges[netIdx].size() - 1;
         }
 
         // create the new net
@@ -299,4 +315,60 @@ void SimulatorApp::cutNets()
         for(int i : newFixedNodes[netIdx])
             fixedCs_->fixNode(nets_, netIdx, i);
     }
+
+    // recreate scissor constraints
+    // WARN: exact parametric positions of each scissor are not preserved
+    
+    std::vector<ContactConstraint::Contact> oldContacts = contactCs_->getContacts();
+    contactCs_->clearContacts();
+    for(const ContactConstraint::Contact& c : oldContacts)
+    {
+        std::unordered_map<int, int>::iterator edgeAIt = edgeIndexMaps[c.netIdxA].find(c.edgeIdxA);
+        std::unordered_map<int, int>::iterator edgeBIt = edgeIndexMaps[c.netIdxB].find(c.edgeIdxB);
+
+        if(edgeAIt != edgeIndexMaps[c.netIdxA].end() &&
+           edgeBIt != edgeIndexMaps[c.netIdxB].end())
+        {
+            ContactConstraint::Contact newContact(nets_, c.netIdxA, edgeAIt->second,
+                                                         c.netIdxB, edgeBIt->second);
+            contactCs_->addContact(newContact, nets_,
+                                   maxEEDistRel_ * getMinEdgeLength(),
+                                   minCNDistRel_ * getMinEdgeLength(),
+                                   minCCDistRel_ * getMinEdgeLength());
+        }
+    }
+}
+
+float SimulatorApp::getMinEdgeLength()
+{
+    float minEdgeLength = std::numeric_limits<float>::max();
+
+    for(int netIdx = 0; netIdx < nets_.size(); netIdx++)
+        minEdgeLength = std::min(minEdgeLength, nets_[netIdx]->edgeLengths.maxCoeff());
+
+    return minEdgeLength;
+}
+
+int SimulatorApp::addAllContactConstraints()
+{
+    int nAdded = 0;
+    float minEdgeLen = getMinEdgeLength();
+
+    for(int netIdxA = 0; netIdxA < nets_.size()-1; netIdxA++)
+        for(int netIdxB = netIdxA+1; netIdxB < nets_.size(); netIdxB++)
+            for(int edgeIdxA = 0; edgeIdxA < nets_[netIdxA]->getNEdges(); edgeIdxA++)
+                for(int edgeIdxB = 0; edgeIdxB < nets_[netIdxB]->getNEdges(); edgeIdxB++)
+                {
+                    ContactConstraint::Contact c(nets_, netIdxA, edgeIdxA, netIdxB, edgeIdxB);
+
+                    if(contactCs_->addContact(c, nets_,
+                                              maxEEDistRel_ * getMinEdgeLength(),
+                                              minCNDistRel_ * getMinEdgeLength(),
+                                              minCCDistRel_ * getMinEdgeLength()))
+                        nAdded++;
+                }
+    
+    frmwrk::Debug::log("Added %d new contact constraints", nAdded);
+
+    return nAdded;
 }

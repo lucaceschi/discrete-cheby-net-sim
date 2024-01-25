@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <utility>
 
 #include <Eigen/Dense>
 #include <openvdb/openvdb.h>
@@ -157,6 +158,45 @@ private:
     std::vector<std::vector<FloatGridSampler>> sdfGridSamplers_;
     std::vector<std::vector<FloatGradient::OutGridType::ConstAccessor>> gradGridAccs_;
     std::vector<std::vector<FloatGradientGridSampler>> gradGridSamplers_;
+};
+
+
+class ContactConstraint : public ConstraintTask
+{
+public:
+    struct Contact
+    {
+        Contact(std::vector<Net*>& nets,
+                int netIndexA, int edgeIndexA,
+                int netIndexB, int edgeIndexB);
+        
+        int netIdxA;
+        int edgeIdxA;
+        int netIdxB;
+        int edgeIdxB;
+        float alpha, omegaA;
+        float beta, omegaB;
+        float distance;
+
+        std::pair<Eigen::Vector3f, Eigen::Vector3f> getContactPoints(std::vector<Net*>& nets) const;
+    };
+
+    ContactConstraint();
+
+    int nConstraints(std::vector<Net*>& nets) const;
+
+    bool addContact(const Contact& contact, std::vector<Net*>& nets,
+                    float maxEdgeEdgeDistance,
+                    float minContactNodeDistance,
+                    float minContactContactDistance);
+
+    const std::vector<Contact>& getContacts() const;
+    void clearContacts();
+
+private:
+    float solve_(std::vector<Net*>& nets) const;
+
+    std::vector<Contact> contacts_;
 };
 
 

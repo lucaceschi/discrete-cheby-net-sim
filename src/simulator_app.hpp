@@ -24,9 +24,16 @@ class SimulatorApp : public frmwrk::App
 private:
     static const Eigen::Vector2i WINDOW_SIZE;
     static const bool WINDOW_RESIZABLE;
+
     static const GLclampf RENDER_BG_COLOR[3];
     static const GLclampf PICKING_BG_COLOR[3];
+
     static constexpr int HISTORY_LENGTH = 1000;
+
+    static const float INIT_CONTACT_CONSTRAINT_MAX_EE_DISTANCE_REL;
+    static const float INIT_CONTACT_CONSTRAINT_MIN_CN_DISTANCE_REL;
+    static const float INIT_CONTACT_CONSTRAINT_MIN_CC_DISTANCE_REL;
+
 
     enum class CameraProjection { PERSP, ORTHO };
     enum class CameraViewpoint { TOP, FRONT, RIGHT };
@@ -66,7 +73,11 @@ private:
     void handleKeyEvents();
 
     void simulate();
+
     void cutNets();
+
+    float getMinEdgeLength();
+    int addAllContactConstraints();
 
     // - - - -
 
@@ -85,8 +96,13 @@ private:
     std::vector<std::shared_ptr<EdgeLengthConstraint>> edgeLenCs_;
     std::vector<std::shared_ptr<ShearLimitConstr>> shearLimitCs_;
     std::shared_ptr<ConstraintTask> collisionCs_;
+    std::shared_ptr<ContactConstraint> contactCs_;
     ConstraintSolver* solver_;
     int solverSpsCap_;
+
+    float maxEEDistRel_;
+    float minCNDistRel_;
+    float minCCDistRel_;
 
     std::atomic<bool> playSim_;
     std::array<float, HISTORY_LENGTH> nItersHist_;

@@ -1,6 +1,11 @@
+#include "framework/debug.hpp"
 #include "constraints.hpp"
+#include "param_distance3.hpp"
 
 #include <iostream>
+
+#include <vcg/space/point3.h>
+#include <vcg/space/segment3.h>
 
 
 #define SDF_RAYCASTING_TOLERANCE 1e-6
@@ -386,4 +391,148 @@ float DiscreteSDFCollConstr::solve_(std::vector<Net*>& nets) const
     }
 
     return meanDelta;
+}
+
+
+ContactConstraint::Contact::Contact(std::vector<Net*>& nets,
+                                    int netIndexA, int edgeIndexA,
+                                    int netIndexB, int edgeIndexB)
+    : netIdxA(netIndexA),
+      edgeIdxA(edgeIndexA),
+      netIdxB(netIndexB),
+      edgeIdxB(edgeIndexB)
+{
+    Net* netA = nets[netIndexA];
+    Net* netB = nets[netIndexB];
+
+    vcg::Segment3f segmentA = vcg::Segment3f(
+        vcg::Point3f(netA->nodePos(netA->edge(edgeIndexA)[0]).data()),
+        vcg::Point3f(netA->nodePos(netA->edge(edgeIndexA)[1]).data())
+    );
+
+    vcg::Segment3f segmentB = vcg::Segment3f(
+        vcg::Point3f(netB->nodePos(netB->edge(edgeIndexB)[0]).data()),
+        vcg::Point3f(netB->nodePos(netB->edge(edgeIndexB)[1]).data())
+    );
+
+    bool parallel;
+    vcg::Point3f contactPointA, contactPointB;
+    vcg::SegmentSegmentDistancePar(segmentA, segmentB,
+                                   distance,
+                                   parallel,
+                                   alpha, beta,
+                                   contactPointA, contactPointB);
+
+    if(parallel)
+        frmwrk::Debug::logWarning("Found parallel edges while computing a new contact");
+
+    omegaA = 1.0 / (std::pow(alpha, 2) + std::pow(1 - alpha, 2));
+    omegaB = 1.0 / (std::pow(beta,  2) + std::pow(1 - beta,  2));
+}
+
+std::pair<Eigen::Vector3f, Eigen::Vector3f> ContactConstraint::Contact::getContactPoints(std::vector<Net*>& nets) const
+{
+    Net* netA = nets[netIdxA];
+    Net* netB = nets[netIdxB];
+
+    Eigen::Vector3f nodeA1 = netA->nodePos(netA->edge(edgeIdxA)[0]);
+    Eigen::Vector3f nodeA2 = netA->nodePos(netA->edge(edgeIdxA)[1]);
+    Eigen::Vector3f nodeB1 = netB->nodePos(netB->edge(edgeIdxB)[0]);
+    Eigen::Vector3f nodeB2 = netB->nodePos(netB->edge(edgeIdxB)[1]);
+
+    return std::make_pair(
+        nodeA1 * (1 - alpha) + nodeA2 * (alpha),
+        nodeB1 * (1 - beta)  + nodeB2 * (beta)
+    );
+}
+
+ContactConstraint::ContactConstraint() {}
+
+float ContactConstraint::solve_(std::vector<Net*>& nets) const
+{
+    float deltaA, deltaB, deltaA1, deltaA2, deltaB1, deltaB2, meanDelta;
+    Eigen::Vector3f contactPointA;
+    Eigen::Vector3f contactPointB;
+    Eigen::Vector3f shiftVec;
+    float currDist;
+
+    meanDelta = 0;    
+    for(const Contact& c : contacts_)
+    {
+        Net* netA = nets[c.netIdxA];
+        Net* netB = nets[c.netIdxB];
+        
+        std::tie(contactPointA, contactPointB) = c.getContactPoints(nets);
+
+        shiftVec = contactPointB - contactPointA;
+        currDist = shiftVec.norm();
+
+        if(currDist == 0)
+            continue;
+
+        deltaA = currDist * c.omegaB / (c.omegaA + c.omegaB);
+        deltaB = currDist * c.omegaA / (c.omegaA + c.omegaB);
+        deltaA1 = deltaA * (1 - c.alpha) * c.omegaA;
+        deltaA2 = deltaA * (c.alpha)     * c.omegaA;
+        deltaB1 = deltaB * (1 - c.beta)  * c.omegaB;
+        deltaB2 = deltaB * (c.beta)      * c.omegaB;
+        shiftVec /= currDist;
+
+        netA->nodePos(netA->edge(c.edgeIdxA)[0]) += deltaA1 * shiftVec;
+        netA->nodePos(netA->edge(c.edgeIdxA)[1]) += deltaA2 * shiftVec;
+        netB->nodePos(netB->edge(c.edgeIdxB)[0]) -= deltaB1 * shiftVec;
+        netB->nodePos(netB->edge(c.edgeIdxB)[1]) -= deltaB2 * shiftVec;
+
+        meanDelta += (std::pow(deltaA1, 2) +
+                      std::pow(deltaA2, 2) +
+                      std::pow(deltaB1, 2) +
+                      std::pow(deltaB2, 2));
+    }
+
+    return meanDelta;
+}
+
+int ContactConstraint::nConstraints(std::vector<Net*>& nets) const
+{
+    return contacts_.size() * 4;
+}
+
+bool ContactConstraint::addContact(const Contact& contact, std::vector<Net*>& nets,
+                                   float maxEdgeEdgeDistance,
+                                   float minContactNodeDistance,
+                                   float minContactContactDistance)
+{
+    if(contact.distance > maxEdgeEdgeDistance ||
+       std::abs(contact.alpha - 0.5) > (0.5 - minContactNodeDistance) ||
+       std::abs(contact.beta  - 0.5) > (0.5 - minContactNodeDistance))
+        return false;
+
+    Eigen::Vector3f contactPointA, otherContactPointA;
+    Eigen::Vector3f contactPointB, otherContactPointB;
+    Eigen::Vector3f meanContactPoint, otherMeanContactPoint;
+
+    std::tie(contactPointA, contactPointB) = contact.getContactPoints(nets);
+    meanContactPoint = (contactPointA + contactPointB) / 2.0f;
+    
+    for(const Contact& otherContact : contacts_)
+    {
+        std::tie(otherContactPointA, otherContactPointB) = otherContact.getContactPoints(nets);
+        otherMeanContactPoint = (otherContactPointA + otherContactPointB) / 2.0f;
+
+        if((meanContactPoint - otherMeanContactPoint).norm() < minContactContactDistance)
+            return false;
+    }
+
+    contacts_.push_back(contact);
+    return true;
+}
+
+const std::vector<ContactConstraint::Contact>& ContactConstraint::getContacts() const
+{
+    return contacts_;
+}
+
+void ContactConstraint::clearContacts()
+{
+    contacts_.clear();
 }

@@ -70,6 +70,9 @@ SimulatorApp::SimulatorApp(std::string sceneName, Json::Value sceneConfig)
       totNodes_(0),
       force_(nullptr),
       solver_(nullptr),
+      maxEEDistRel_(INIT_CONTACT_CONSTRAINT_MAX_EE_DISTANCE_REL),
+      minCNDistRel_(INIT_CONTACT_CONSTRAINT_MIN_CN_DISTANCE_REL),
+      minCCDistRel_(INIT_CONTACT_CONSTRAINT_MIN_CC_DISTANCE_REL),
       playSim_(false),
       nItersHist_(),
       meanDeltaHist_(),
@@ -180,6 +183,9 @@ bool SimulatorApp::initApp()
 
         fixedCs_ = std::make_shared<FixedNodeConstraint>(nets_);
         solver_->addConstraint(fixedCs_);
+
+        contactCs_ = std::make_shared<ContactConstraint>();
+        solver_->addConstraint(contactCs_);
 
         // initialize force        
 
