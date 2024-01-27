@@ -339,6 +339,8 @@ void SimulatorApp::cutNets()
                                    minCCDistRel_ * getMinEdgeLength());
         }
     }
+
+    canRestoreConfigs_ = false;
 }
 
 float SimulatorApp::getMinEdgeLength()
@@ -373,4 +375,33 @@ int SimulatorApp::addAllContactConstraints()
     frmwrk::Debug::log("Added %d new contact constraints", nAdded);
 
     return nAdded;
+}
+
+void SimulatorApp::saveConfigs()
+{
+    for(int netIdx = 0; netIdx < nets_.size(); netIdx++)
+        savedConfigs[netIdx] = nets_[netIdx]->pos;
+
+    canRestoreConfigs_ = true;
+}
+
+void SimulatorApp::restoreConfigs()
+{
+    if(canRestoreConfigs_)
+        for(int netIdx = 0; netIdx < nets_.size(); netIdx++)
+            nets_[netIdx]->pos = savedConfigs[netIdx];
+}
+
+float SimulatorApp::computeConfigsSSE()
+{
+    if(!canRestoreConfigs_)
+        return -1;
+
+    float sse = 0;
+
+    for(int netIdx = 0; netIdx < nets_.size(); netIdx++)
+        for(int nodeIdx = 0; nodeIdx < nets_[netIdx]->getNNodes(); nodeIdx++)
+            sse += (nets_[netIdx]->nodePos(nodeIdx) - savedConfigs[netIdx].col(nodeIdx)).squaredNorm();
+
+    return sse;
 }

@@ -68,6 +68,7 @@ SimulatorApp::SimulatorApp(std::string sceneName, Json::Value sceneConfig)
       trackball_(),
       nets_(),
       totNodes_(0),
+      canRestoreConfigs_(false),
       force_(nullptr),
       softNodeDragging_(false),
       fixedNodesForce_(),
@@ -123,6 +124,7 @@ bool SimulatorApp::initApp()
 
         int nNets = netsArray.size();
         nets_.reserve(nNets);
+        savedConfigs.reserve(nNets);
         edgeLenCs_.reserve(nNets);
         shearLimitCs_.reserve(nNets);
         for(int n = 0; n < nNets; n++)
@@ -175,6 +177,8 @@ bool SimulatorApp::initApp()
 
             nets_.push_back(new Net(size, edgeLength, center, xTangVec, yTangVec, color));
             totNodes_ += nets_[n]->getNNodes();
+
+            savedConfigs.emplace_back(3, size[0] * size[1]);
 
             edgeLenCs_.push_back(std::make_shared<EdgeLengthConstraint>(nets_, n));
             solver_->addConstraint(edgeLenCs_.back());

@@ -79,6 +79,10 @@ private:
     float getMinEdgeLength();
     int addAllContactConstraints();
 
+    void saveConfigs();
+    void restoreConfigs();
+    float computeConfigsSSE();
+
     // - - - -
 
     Json::Value sceneConfig_;
@@ -89,6 +93,9 @@ private:
 
     std::vector<Net*> nets_;
     int totNodes_;
+
+    std::vector<Eigen::Matrix3Xf> savedConfigs;
+    bool canRestoreConfigs_;
 
     UnaryForce* force_;
 

@@ -1,4 +1,5 @@
 #include "simulator_app.hpp"
+#include "framework/debug.hpp"
 
 #include <vector>
 #include <string>
@@ -92,10 +93,22 @@ void SimulatorApp::drawGUI()
             {
                 ImGui::MenuItem("Soft dragging", nullptr, &softNodeDragging_);
                 
+                ImGui::Separator();
+
                 if(ImGui::MenuItem("Cut and fix nets"))
                     cutNets();
                 if(ImGui::MenuItem("Add contact constraints"))
                     ImGui::OpenPopup(contactPopupId);
+
+                ImGui::Separator();
+
+                if(ImGui::MenuItem("Save current configs"))
+                    saveConfigs();
+                if(ImGui::MenuItem("Restore last configs", nullptr, false, canRestoreConfigs_))
+                    restoreConfigs();
+                if(ImGui::MenuItem("Compute configs SSE", nullptr, false, canRestoreConfigs_))
+                    frmwrk::Debug::log("SSE between the saved configurations and the current is: %f", computeConfigsSSE());
+
                 ImGui::EndMenu();
             }
 
