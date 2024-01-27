@@ -69,6 +69,8 @@ SimulatorApp::SimulatorApp(std::string sceneName, Json::Value sceneConfig)
       nets_(),
       totNodes_(0),
       force_(nullptr),
+      softNodeDragging_(false),
+      fixedNodesForce_(),
       solver_(nullptr),
       maxEEDistRel_(INIT_CONTACT_CONSTRAINT_MAX_EE_DISTANCE_REL),
       minCNDistRel_(INIT_CONTACT_CONSTRAINT_MIN_CN_DISTANCE_REL),
@@ -180,7 +182,7 @@ bool SimulatorApp::initApp()
             shearLimitCs_.push_back(std::make_shared<ShearLimitConstr>(n, edgeLength, shearLimit));
             solver_->addConstraint(shearLimitCs_.back());
         }
-
+        
         fixedCs_ = std::make_shared<FixedNodeConstraint>(nets_);
         solver_->addConstraint(fixedCs_);
 

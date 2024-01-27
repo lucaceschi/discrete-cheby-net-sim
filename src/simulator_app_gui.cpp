@@ -90,6 +90,8 @@ void SimulatorApp::drawGUI()
 
             if(ImGui::BeginMenu("Nets"))
             {
+                ImGui::MenuItem("Soft dragging", nullptr, &softNodeDragging_);
+                
                 if(ImGui::MenuItem("Cut and fix nets"))
                     cutNets();
                 if(ImGui::MenuItem("Add contact constraints"))

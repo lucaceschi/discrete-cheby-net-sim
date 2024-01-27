@@ -88,7 +88,6 @@ void SimulatorApp::handleMouseEvents()
                 else if(input_.isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT))
                 {
                     pick_ = Pick(netIdx, pickedNodeIdx, pickedDepth);
-                    fixedCs_->fixNode(nets_, netIdx, pickedNodeIdx);
                     break;
                 }
             }
@@ -118,13 +117,19 @@ void SimulatorApp::handleMouseEvents()
             };
 
             Eigen::Vector4f worldPos = ((projectionMat * modelviewMat).inverse() * curPosHom).cast<float>();
-
-            nets_[pick_.netIdx]->nodePos(pick_.nodeIdx) = Eigen::Vector3f{
+            Eigen::Vector3f newPos = {
                 worldPos(0) / worldPos(3),
                 worldPos(1) / worldPos(3),
                 worldPos(2) / worldPos(3)
             };
-            fixedCs_->fixNode(nets_, pick_.netIdx, pick_.nodeIdx);
+
+            if(softNodeDragging_)
+                fixedNodesForce_.fixNode(pick_.netIdx, pick_.nodeIdx, newPos);
+            else
+            {
+                nets_[pick_.netIdx]->nodePos(pick_.nodeIdx) = newPos;
+                fixedCs_->fixNode(nets_, pick_.netIdx, pick_.nodeIdx);
+            }            
         }
         else
             trackball_.MouseMove((int)curPos(0), (int)curPos(1));
@@ -133,7 +138,12 @@ void SimulatorApp::handleMouseEvents()
     if(input_.isMouseButtonReleased(GLFW_MOUSE_BUTTON_LEFT))
     {
         if(pick_.pick)
-            fixedCs_->freeNode(pick_.netIdx, pick_.nodeIdx);
+        {
+            if(softNodeDragging_)
+                fixedNodesForce_.freeNode();
+            else
+                fixedCs_->freeNode(pick_.netIdx, pick_.nodeIdx);
+        }
         pick_ = Pick();
         trackball_.MouseUp((int)curPos(0), (int)curPos(1), vcg::Trackball::BUTTON_LEFT);
     }

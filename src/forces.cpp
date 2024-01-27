@@ -1,9 +1,19 @@
 #include "forces.hpp"
 
+#include <vector>
+#include <map>
+
 #include "converter_defs.hpp"
 
 
 UnaryForce::~UnaryForce() {}
+
+void UnaryForce::applyForce(std::vector<Net*>& nets) const
+{
+    for(int netIdx = 0; netIdx < nets.size(); netIdx++)
+        for(int nodeIdx = 0; nodeIdx < nets[netIdx]->getNNodes(); nodeIdx++)
+            applyForce(nets, netIdx, nodeIdx);
+}
 
 
 ConstantForce::ConstantForce(Eigen::Vector3f vec)
@@ -15,6 +25,38 @@ ConstantForce::~ConstantForce() {}
 void ConstantForce::applyForce(std::vector<Net*>& nets, int netIndex, int nodeIndex) const
 {
     nets[netIndex]->nodePos(nodeIndex) += vec;
+}
+
+
+FixedNodesForce::FixedNodesForce()
+    : isFixed_(false)
+{}
+
+FixedNodesForce::~FixedNodesForce() {}
+
+void FixedNodesForce::fixNode(int netIndex, int nodeIndex, Eigen::Vector3f pos)
+{
+    fixedNetIdx_ = netIndex;
+    fixedNodeIdx_ = nodeIndex;
+    fixedPos_ = pos;
+    isFixed_ = true;
+}
+
+void FixedNodesForce::freeNode()
+{
+    isFixed_ = false;
+}
+
+void FixedNodesForce::applyForce(std::vector<Net*>& nets) const
+{
+    if(isFixed_)
+        nets[fixedNetIdx_]->nodePos(fixedNodeIdx_) = fixedPos_;
+}
+
+void FixedNodesForce::applyForce(std::vector<Net*>& nets, int netIndex, int nodeIndex) const
+{
+    if(isFixed_ && nodeIndex == fixedNodeIdx_ && netIndex == fixedNetIdx_)
+        nets[fixedNetIdx_]->nodePos(fixedNodeIdx_) = fixedPos_;
 }
 
 

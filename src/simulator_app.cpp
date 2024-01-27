@@ -152,6 +152,8 @@ void SimulatorApp::simulate() {
             }
         }
 
+        fixedNodesForce_.applyForce(nets_);
+
         if(solver_->solve() == ConstraintSolver::ReturnCode::REACHED_MAX_ITERS)
         {
             frmwrk::Debug::logWarning("Constraint solver reached max iters, stopping");

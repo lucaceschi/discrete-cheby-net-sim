@@ -91,8 +91,11 @@ private:
     int totNodes_;
 
     UnaryForce* force_;
-    
+
+    bool softNodeDragging_;
+    FixedNodesForce fixedNodesForce_;
     std::shared_ptr<FixedNodeConstraint> fixedCs_;
+
     std::vector<std::shared_ptr<EdgeLengthConstraint>> edgeLenCs_;
     std::vector<std::shared_ptr<ShearLimitConstr>> shearLimitCs_;
     std::shared_ptr<ConstraintTask> collisionCs_;

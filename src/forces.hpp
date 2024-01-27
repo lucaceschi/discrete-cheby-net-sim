@@ -3,6 +3,9 @@
 
 #include "net.hpp"
 
+#include <vector>
+#include <map>
+
 #include <Eigen/Dense>
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/GridOperators.h>
@@ -13,6 +16,7 @@ class UnaryForce
 {
 public:
     virtual ~UnaryForce();
+    virtual void applyForce(std::vector<Net*>& nets) const;
     virtual void applyForce(std::vector<Net*>& nets, int netIndex, int nodeIndex) const = 0;
 };
 
@@ -26,7 +30,26 @@ public:
     virtual void applyForce(std::vector<Net*>& nets, int netIndex, int nodeIndex) const;
 
     Eigen::Vector3f vec;
-    
+};
+
+
+class FixedNodesForce : public UnaryForce
+{
+public:
+    FixedNodesForce();
+    ~FixedNodesForce();
+
+    void fixNode(int netIndex, int nodeIndex, Eigen::Vector3f pos);
+    void freeNode();
+
+    virtual void applyForce(std::vector<Net*>& nets) const;
+    virtual void applyForce(std::vector<Net*>& nets, int netIndex, int nodeIndex) const;
+
+private:
+    bool isFixed_;
+    int fixedNetIdx_;
+    int fixedNodeIdx_;
+    Eigen::Vector3f fixedPos_;
 };
 
 

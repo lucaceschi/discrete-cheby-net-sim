@@ -37,11 +37,7 @@ bool FixedNodeConstraint::isNodeFixed(int netIndex, int nodeIndex) const
 
 void FixedNodeConstraint::freeNode(int netIndex, int nodeIndex)
 {
-    typedef std::unordered_map<int, Eigen::Vector3f>::iterator Iterator;
-    Iterator it = fixedPos_[netIndex].find(nodeIndex);
-
-    if(it != fixedPos_[netIndex].end())
-        fixedPos_[netIndex].erase(it);
+    fixedPos_[netIndex].erase(nodeIndex);
 }
 
 void FixedNodeConstraint::freeNodes(int netIndex)
